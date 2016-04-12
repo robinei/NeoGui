@@ -45,15 +45,18 @@ namespace NeoGui.Core
         public DrawCommandType Type;
 
         [FieldOffset(4)]
+        public Rect ClipRect;
+
+        [FieldOffset(20)]
         public SolidRectCommand SolidRect;
 
-        [FieldOffset(4)]
+        [FieldOffset(20)]
         public GradientRectCommand GradientRect;
 
-        [FieldOffset(4)]
+        [FieldOffset(20)]
         public TexturedRectCommand TexturedRect;
 
-        [FieldOffset(4)]
+        [FieldOffset(20)]
         public TextCommand Text;
     }
 }

@@ -39,17 +39,25 @@ namespace NeoGui.Core
         {
             Context.DispatchEvent(this, e);
         }
+
+        public bool IntersectsMouse => AbsoluteRect.Contains(Context.Input.MousePos) &&
+                                       ClipRect.Contains(Context.Input.MousePos);
+
+        public void OnDepthDescent(Action<Element> handler) { Context.AddDepthDescentHandler(Index, handler); }
+        public void OnDepthAscent(Action<Element> handler) { Context.AddDepthAscentHandler(Index, handler); }
+        public void OnTreeDescent(Action<Element> handler) { Context.AddTreeDescentHandler(Index, handler); }
+        public void OnTreeAscent(Action<Element> handler) { Context.AddTreeAscentHandler(Index, handler); }
         
-        public bool HasData<TComponent>()
+        public bool Has<TComponent>()
         {
             return Context.HasData<TComponent>(Index);
         }
-        public TComponent GetData<TComponent>(bool create = false)
+        public TComponent Get<TComponent>(bool create = false)
             where TComponent: new()
         {
             return Context.GetData<TComponent>(Index, create);
         }
-        public void SetData<TComponent>(TComponent value)
+        public void Set<TComponent>(TComponent value)
         {
             Context.SetData(Index, value);
         }
@@ -90,6 +98,11 @@ namespace NeoGui.Core
         }
 
         #region Misc forwarded properties
+        public bool ClipContent
+        {
+            get { return Context.AttrClipContent[Index]; }
+            set { Context.AttrClipContent[Index] = value; }
+        }
         public int ZIndex
         {
             get { return Context.AttrZIndex[Index]; }
@@ -132,6 +145,7 @@ namespace NeoGui.Core
         }
 
         public Rect AbsoluteRect => Context.AttrAbsRect[Index];
+        public Rect ClipRect => Context.AttrClipRect[Index];
 
         public Action<DrawContext> Draw
         {

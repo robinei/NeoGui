@@ -4,21 +4,21 @@ using System.Collections.Generic;
 
 namespace NeoGui.Core
 {
-    public class ValueStorage<TTypeCategory>
+    public class ValueStorage<TTypeCategory, TKey>
     {
         private object[] dictionaries = new object[64];
 
-        public bool HasValue<TValue>(int elemIndex)
+        public bool HasValue<TValue>(TKey key)
         {
             var typeKey = TypeKeys<TTypeCategory, TValue>.Key;
             if (typeKey >= dictionaries.Length) {
                 return false;
             }
-            var dict = (Dictionary<int, TValue>)dictionaries[typeKey];
-            return dict != null && dict.ContainsKey(elemIndex);
+            var dict = (Dictionary<TKey, TValue>)dictionaries[typeKey];
+            return dict != null && dict.ContainsKey(key);
         }
 
-        public TValue GetValue<TValue>(int elemIndex, bool create)
+        public TValue GetValue<TValue>(TKey key, bool create)
             where TValue: new()
         {
             var typeKey = TypeKeys<TTypeCategory, TValue>.Key;
@@ -28,38 +28,38 @@ namespace NeoGui.Core
                 }
                 Array.Resize(ref dictionaries, dictionaries.Length * 2);
             }
-            var dict = (Dictionary<int, TValue>)dictionaries[typeKey];
+            var dict = (Dictionary<TKey, TValue>)dictionaries[typeKey];
             if (dict == null) {
                 if (!create) {
                     return default(TValue);
                 }
-                dict = new Dictionary<int, TValue>();
+                dict = new Dictionary<TKey, TValue>();
                 dictionaries[typeKey] = dict;
             }
             TValue value;
-            if (dict.TryGetValue(elemIndex, out value)) {
+            if (dict.TryGetValue(key, out value)) {
                 return value;
             }
             if (!create) {
                 return default(TValue);
             }
             value = new TValue();
-            dict[elemIndex] = value;
+            dict[key] = value;
             return value;
         }
 
-        public void SetValue<TValue>(int elemIndex, TValue value)
+        public void SetValue<TValue>(TKey key, TValue value)
         {
             var typeKey = TypeKeys<TTypeCategory, TValue>.Key;
-            if (typeKey >= dictionaries.Length) {
+            while (typeKey >= dictionaries.Length) {
                 Array.Resize(ref dictionaries, dictionaries.Length * 2);
             }
-            var dict = (Dictionary<int, TValue>)dictionaries[typeKey];
+            var dict = (Dictionary<TKey, TValue>)dictionaries[typeKey];
             if (dict == null) {
-                dict = new Dictionary<int, TValue>();
+                dict = new Dictionary<TKey, TValue>();
                 dictionaries[typeKey] = dict;
             }
-            dict[elemIndex] = value;
+            dict[key] = value;
         }
 
         public void Clear()

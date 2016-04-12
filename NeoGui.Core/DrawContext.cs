@@ -13,6 +13,7 @@ namespace NeoGui.Core
         {
             CommandBuffer.Add(new DrawCommand {
                 Type = DrawCommandType.SolidRect,
+                ClipRect = Target.ClipRect,
                 SolidRect = new SolidRectCommand {
                     Rect = new Rect(Target.AbsoluteRect.Pos + rect.Pos, rect.Size),
                     Color = color
@@ -24,6 +25,7 @@ namespace NeoGui.Core
         {
             CommandBuffer.Add(new DrawCommand {
                 Type = DrawCommandType.Text,
+                ClipRect = Target.ClipRect,
                 Text = new TextCommand {
                     Vec2 = Target.AbsoluteRect.Pos + pos,
                     StringId = Context.InternString(text),

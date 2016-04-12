@@ -51,6 +51,18 @@ namespace NeoGui.Core
             return p.X >= X && p.Y >= Y && p.X < X + Width && p.Y < Y + Height;
         }
 
+        public Rect Intersection(Rect r)
+        {
+            var x = Math.Max(X, r.X);
+            var x1 = Math.Min(X + Width, r.X + r.Width);
+            var y = Math.Max(Y, r.Y);
+            var y1 = Math.Min(Y + Height, r.Y + r.Height);
+            if (x1 >= x && y1 >= y) {
+                return new Rect(x, y, x1 - x, y1 - y);
+            }
+            return Empty;
+        }
+
         public static Rect operator +(Rect r, Vec2 v)
         {
             return  new Rect(r.Pos + v, r.Size);
@@ -64,5 +76,7 @@ namespace NeoGui.Core
         {
             return $"Rect({X}, {Y}, {Width}, {Height})";
         }
+
+        public static readonly Rect Empty = new Rect(0, 0, 0, 0);
     }
 }

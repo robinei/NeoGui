@@ -11,14 +11,18 @@ namespace NeoGui
     public class Game : Microsoft.Xna.Framework.Game, INeoGuiDelegate
     {
         private readonly GraphicsDeviceManager graphics;
+        private readonly RasterizerState rasterizerState = new RasterizerState {ScissorTestEnable = true};
         private SpriteBatch spriteBatch;
         private SpriteFont font;
         private Texture2D pixel;
         
-        private MouseState mouseState;
-        private MouseState prevMouseState;
-
+        private bool inputInited;
+        private readonly RawInputState rawInput = new RawInputState();
         private NeoGuiContext ui;
+
+        private int frameRate = 0;
+        private int frameCounter = 0;
+        private TimeSpan elapsedTime = TimeSpan.Zero;
 
         public Vec2 TextSize(string text, int fontId = 0)
         {
@@ -29,6 +33,9 @@ namespace NeoGui
         public Game()
         {
             graphics = new GraphicsDeviceManager(this);
+            graphics.PreferredBackBufferWidth = 1024;
+            graphics.PreferredBackBufferHeight = 768;
+            graphics.ApplyChanges();
             Content.RootDirectory = "Content";
         }
         
@@ -36,7 +43,6 @@ namespace NeoGui
         {
             base.Initialize();
             IsMouseVisible = true;
-            prevMouseState = Mouse.GetState();
         }
         
         protected override void LoadContent()
@@ -60,45 +66,49 @@ namespace NeoGui
                 Exit();
             }
 
+            elapsedTime += gameTime.ElapsedGameTime;
+            if (elapsedTime > TimeSpan.FromSeconds(1)) {
+                elapsedTime -= TimeSpan.FromSeconds(1);
+                frameRate = frameCounter;
+                frameCounter = 0;
+            }
+
+            if (!inputInited) {
+                UpdateInput(gameTime);
+                inputInited = true;
+            }
+
             var bounds = GraphicsDevice.Viewport.Bounds;
             TestUi.DoUi(ui, bounds.Width, bounds.Height);
-            MaybeDispatchMouseEvents();
+            UpdateInput(gameTime);
+            ui.RunUpdateTraversals();
 
             base.Update(gameTime);
         }
 
-        private void MaybeDispatchMouseEvents()
+        private void UpdateInput(GameTime gameTime)
         {
-            mouseState = Mouse.GetState();
-            if (mouseState.X != prevMouseState.X || mouseState.Y != prevMouseState.Y) {
-                var pos = new Vec2(mouseState.X, mouseState.Y);
-                ui.HitTest(pos)?.DispatchEvent(new MouseMotionEvent {
-                    Pos = pos
-                });
-            }
-            MaybeDispatchButtonEvent(MouseButton.Left, s => s.LeftButton);
-            MaybeDispatchButtonEvent(MouseButton.Right, s => s.RightButton);
-            MaybeDispatchButtonEvent(MouseButton.Middle, s => s.MiddleButton);
-            prevMouseState = mouseState;
-        }
-        private void MaybeDispatchButtonEvent(MouseButton button, Func<MouseState, ButtonState> getButtonState)
-        {
-            if (getButtonState(mouseState) != getButtonState(prevMouseState)) {
-                var pos = new Vec2(mouseState.X, mouseState.Y);
-                ui.HitTest(pos)?.DispatchEvent(new MouseButtonEvent {
-                    Pos = pos,
-                    Pressed = getButtonState(mouseState) == ButtonState.Pressed,
-                    Button = button
-                });
-            }
+            var mouseState = Mouse.GetState();
+            rawInput.Time = gameTime.TotalGameTime.TotalSeconds;
+            rawInput.MousePos = new Vec2(mouseState.X, mouseState.Y);
+            rawInput.MouseButtonDown[(int)MouseButton.Left] = mouseState.LeftButton == ButtonState.Pressed;
+            rawInput.MouseButtonDown[(int)MouseButton.Right] = mouseState.RightButton == ButtonState.Pressed;
+            rawInput.MouseButtonDown[(int)MouseButton.Middle] = mouseState.MiddleButton == ButtonState.Pressed;
+            ui.SetCurrentInputState(rawInput);
         }
         
         protected override void Draw(GameTime gameTime)
         {
+            ++frameCounter;
             GraphicsDevice.Clear(Color.CornflowerBlue);
-            
-            spriteBatch.Begin();
+            spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, null, null, rasterizerState);
+
+            var prevClipRect = Rect.Empty;
             foreach (var command in ui.DrawCommandBuffer) {
+                var clipRect = command.ClipRect;
+                if ((clipRect.Pos - prevClipRect.Pos).SqrLength > 0 || (clipRect.Size - prevClipRect.Size).SqrLength > 0) {
+                    spriteBatch.GraphicsDevice.ScissorRectangle = clipRect.ToMonoGameRectangle();
+                }
                 switch (command.Type) {
                 case DrawCommandType.SolidRect:
                     spriteBatch.Draw(pixel, command.SolidRect.Rect.ToMonoGameRectangle(), command.SolidRect.Color.ToMonoGameColor());
@@ -114,8 +124,13 @@ namespace NeoGui
                     throw new ArgumentOutOfRangeException();
                 }
             }
-            spriteBatch.End();
+            
+            spriteBatch.GraphicsDevice.ScissorRectangle = GraphicsDevice.Viewport.Bounds;
+            string fps = $"fps: {frameRate}  mem: {GC.GetTotalMemory(false)}";
+            spriteBatch.DrawString(font, fps, new Vector2(5, 1), Color.White);
+            spriteBatch.DrawString(font, fps, new Vector2(4, 0), Color.Black);
 
+            spriteBatch.End();
             base.Draw(gameTime);
         }
     }

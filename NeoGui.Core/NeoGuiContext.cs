@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 
 namespace NeoGui.Core
@@ -31,7 +32,8 @@ namespace NeoGui.Core
             return key;
         }
     }
-    
+
+
     public class NeoGuiContext
     {
         // categories for TypeKeys
@@ -44,7 +46,7 @@ namespace NeoGui.Core
         public readonly INeoGuiDelegate Delegate;
 
         private readonly object rootKey = new object();
-        private readonly ValueStorage<StateKeys> rootStateHolder = new ValueStorage<StateKeys>();
+        private readonly ValueStorage<StateKeys, ElementId> rootStateHolder = new ValueStorage<StateKeys, ElementId>();
 
         private int elementCount;
         private ElementId[] attrId = new ElementId[InitialArraySize];
@@ -53,15 +55,39 @@ namespace NeoGui.Core
         private int[] attrNextSibling = new int[InitialArraySize];
         private int[] attrLevel = new int[InitialArraySize];
         private int[] attrZIndex = new int[InitialArraySize];
+        private bool[] attrClipContent = new bool[InitialArraySize];
         private int[] attrKeyCounterIndex = new int[InitialArraySize];
-        private ValueStorage<StateKeys>[] attrStateHolder = new ValueStorage<StateKeys>[InitialArraySize];
+        private ValueStorage<StateKeys, ElementId>[] attrStateHolder = new ValueStorage<StateKeys, ElementId>[InitialArraySize];
         private Rect[] attrRect = new Rect[InitialArraySize];
         private Rect[] attrAbsRect = new Rect[InitialArraySize]; // absolute coordinates
+        private Rect[] attrClipRect = new Rect[InitialArraySize];
         private Action<DrawContext>[] attrDrawFunc = new Action<DrawContext>[InitialArraySize];
         
         private readonly List<int> keyCounters = new List<int>();
+
+
+        private bool hasSetInputStateOnce;
+        private InputState prevInput = new InputState();
+        private InputState currInput = new InputState();
+        public InputState Input => currInput;
+        public void SetCurrentInputState(RawInputState rawInput)
+        {
+            RotateInputsAndSetState(rawInput);
+            if (!hasSetInputStateOnce) {
+                RotateInputsAndSetState(rawInput);
+                hasSetInputStateOnce = true;
+            }
+        }
+        private void RotateInputsAndSetState(RawInputState rawInput)
+        {
+            var temp = prevInput;
+            prevInput = currInput;
+            currInput = temp;
+            currInput.Reset(prevInput, rawInput);
+        }
+
         
-        
+
         private bool inFrame;
 
 
@@ -84,13 +110,14 @@ namespace NeoGui.Core
 
             ClearDataStorage();
             ClearEventListeners();
+            ClearTraverseHandlers();
         }
 
         public void EndFrame()
         {
             CalcBottomToTopIndex();
             SortEventListeners();
-            TransformRects();
+            CalcRects();
             DrawElements();
             inFrame = false;
         }
@@ -100,8 +127,10 @@ namespace NeoGui.Core
         internal int[] AttrFirstChild => attrFirstChild;
         internal int[] AttrNextSibling => attrNextSibling;
         internal int[] AttrZIndex => attrZIndex;
+        internal bool[] AttrClipContent => attrClipContent;
         internal Rect[] AttrRect => attrRect;
         internal Rect[] AttrAbsRect => attrAbsRect;
+        internal Rect[] AttrClipRect => attrClipRect;
         internal Action<DrawContext>[] AttrDrawFunc => attrDrawFunc;
         
         public Element Root => new Element(this, 0);
@@ -116,10 +145,12 @@ namespace NeoGui.Core
                 Array.Resize(ref attrNextSibling, newLength);
                 Array.Resize(ref attrLevel, newLength);
                 Array.Resize(ref attrZIndex, newLength);
+                Array.Resize(ref attrClipContent, newLength);
                 Array.Resize(ref attrKeyCounterIndex, newLength);
                 Array.Resize(ref attrStateHolder, newLength);
                 Array.Resize(ref attrRect, newLength);
                 Array.Resize(ref attrAbsRect, newLength);
+                Array.Resize(ref attrClipRect, newLength);
                 Array.Resize(ref attrDrawFunc, newLength);
             }
 
@@ -141,6 +172,7 @@ namespace NeoGui.Core
             attrNextSibling[elementCount] = attrFirstChild[parent.Index]; // set parent's first child as next sibling
             attrLevel[elementCount] = attrLevel[parent.Index] + 1;
             attrZIndex[elementCount] = 0;
+            attrClipContent[elementCount] = false;
             attrFirstChild[parent.Index] = elementCount; // set this element as parent's first child
             attrKeyCounterIndex[elementCount] = keyCounterIndex;
             attrStateHolder[elementCount] = attrStateHolder[parent.Index]; // inherit parent state holder
@@ -151,13 +183,24 @@ namespace NeoGui.Core
         }
 
 
-        private void TransformRects()
+        private void CalcRects()
         {
             // we know parents come before children, so it's OK to just iterate like this and refer back to parents
-            for (var i = 1; i < attrRect.Length; ++i) {
+            attrAbsRect[0] = attrRect[0];
+            for (var i = 1; i < elementCount; ++i) {
                 attrAbsRect[i] = attrRect[i];
                 attrAbsRect[i].X += attrAbsRect[attrParent[i]].X;
                 attrAbsRect[i].Y += attrAbsRect[attrParent[i]].Y;
+            }
+
+            attrClipRect[0] = attrAbsRect[0];
+            for (var i = 1; i < elementCount; ++i) {
+                var parentClipRect = attrClipRect[attrParent[i]];
+                if (attrClipContent[i]) {
+                    attrClipRect[i] = parentClipRect.Intersection(attrAbsRect[i]);
+                } else {
+                    attrClipRect[i] = parentClipRect;
+                }
             }
         }
         
@@ -226,11 +269,93 @@ namespace NeoGui.Core
         }
 
 
+        #region Ascent/descent traversal
+        private struct TraverseEntry<TKey> : IComparable<TraverseEntry<TKey>>
+            where TKey: IComparable<TKey>
+        {
+            private readonly TKey key;
+            public readonly int ElemIndex;
+            public readonly Action<Element> Handler;
+            public TraverseEntry(TKey key, int elemIndex, Action<Element> handler)
+            {
+                this.key = key;
+                ElemIndex = elemIndex;
+                Handler = handler;
+            }
+            public int CompareTo(TraverseEntry<TKey> other)
+            {
+                return key.CompareTo(other.key);
+            }
+        }
+        private readonly List<TraverseEntry<long>> depthDescentHandlers = new List<TraverseEntry<long>>();
+        private readonly List<TraverseEntry<long>> depthAscentHandlers = new List<TraverseEntry<long>>();
+        private readonly List<TraverseEntry<int>> treeDescentHandlers = new List<TraverseEntry<int>>();
+        private readonly List<TraverseEntry<int>> treeAscentHandlers = new List<TraverseEntry<int>>();
+
+        internal void AddDepthDescentHandler(int elemIndex, Action<Element> handler)
+        {
+            // temporarily store 0 as key since the final z-index can't necessarily be known now
+            depthDescentHandlers.Add(new TraverseEntry<long>(0, elemIndex, handler));
+        }
+        internal void AddDepthAscentHandler(int elemIndex, Action<Element> handler)
+        {
+            // temporarily store 0 as key since the final z-index can't necessarily be known now
+            depthAscentHandlers.Add(new TraverseEntry<long>(0, elemIndex, handler));
+        }
+        internal void AddTreeDescentHandler(int elemIndex, Action<Element> handler)
+        {
+            treeDescentHandlers.Add(new TraverseEntry<int>(attrLevel[elemIndex], elemIndex, handler));
+        }
+        internal void AddTreeAscentHandler(int elemIndex, Action<Element> handler)
+        {
+            treeAscentHandlers.Add(new TraverseEntry<int>(attrLevel[elemIndex], elemIndex, handler));
+        }
+
+        private void ClearTraverseHandlers()
+        {
+            depthDescentHandlers.Clear();
+            depthAscentHandlers.Clear();
+            treeDescentHandlers.Clear();
+            treeAscentHandlers.Clear();
+        }
+        public void RunUpdateTraversals()
+        {
+            for (var i = 0; i < depthDescentHandlers.Count; ++i) { // rewrite now that we can know z-index
+                var elemIndex = depthDescentHandlers[i].ElemIndex;
+                long key = (attrZIndex[elemIndex] << 32) | attrLevel[elemIndex];
+                depthDescentHandlers[i] = new TraverseEntry<long>(key, elemIndex, depthDescentHandlers[i].Handler);
+            }
+            depthDescentHandlers.Sort();
+            for (var i = depthDescentHandlers.Count - 1; i >= 0; --i) {
+                depthDescentHandlers[i].Handler(new Element(this, depthDescentHandlers[i].ElemIndex));
+            }
+
+            for (var i = 0; i < depthAscentHandlers.Count; ++i) { // rewrite now that we can know z-index
+                var elemIndex = depthAscentHandlers[i].ElemIndex;
+                long key = (attrZIndex[elemIndex] << 32) | attrLevel[elemIndex];
+                depthAscentHandlers[i] = new TraverseEntry<long>(key, elemIndex, depthAscentHandlers[i].Handler);
+            }
+            depthAscentHandlers.Sort();
+            for (var i = 0; i < depthAscentHandlers.Count; ++i) {
+                depthAscentHandlers[i].Handler(new Element(this, depthAscentHandlers[i].ElemIndex));
+            }
+
+            treeDescentHandlers.Sort();
+            for (var i = 0; i < treeDescentHandlers.Count; ++i) {
+                treeDescentHandlers[i].Handler(new Element(this, treeDescentHandlers[i].ElemIndex));
+            }
+
+            treeAscentHandlers.Sort();
+            for (var i = treeAscentHandlers.Count - 1; i >= 0; --i) {
+                treeAscentHandlers[i].Handler(new Element(this, treeAscentHandlers[i].ElemIndex));
+            }
+        }
+        #endregion
 
         #region State
-        private Dictionary<int, ValueStorage<StateKeys>> prevStateHolders = new Dictionary<int, ValueStorage<StateKeys>>();
-        private Dictionary<int, ValueStorage<StateKeys>> currStateHolders = new Dictionary<int, ValueStorage<StateKeys>>();
-        private readonly Stack<ValueStorage<StateKeys>> cachedStateHolders = new Stack<ValueStorage<StateKeys>>(); // for reuse, so we don't generate garbage
+        private Dictionary<int, ValueStorage<StateKeys, ElementId>> prevStateHolders = new Dictionary<int, ValueStorage<StateKeys, ElementId>>();
+        private Dictionary<int, ValueStorage<StateKeys, ElementId>> currStateHolders = new Dictionary<int, ValueStorage<StateKeys, ElementId>>();
+        private readonly Stack<ValueStorage<StateKeys, ElementId>> cachedStateHolders = new Stack<ValueStorage<StateKeys, ElementId>>(); // for reuse, so we don't generate garbage
         
         private void FlipStateHolders()
         {
@@ -248,34 +373,34 @@ namespace NeoGui.Core
         {
             Debug.Assert(elemIndex > 0);
             Debug.Assert(ReferenceEquals(attrStateHolder[attrParent[elemIndex]], attrStateHolder[elemIndex]));
-            ValueStorage<StateKeys> stateHolder;
+            ValueStorage<StateKeys, ElementId> stateHolder;
             if (prevStateHolders.TryGetValue(elemIndex, out stateHolder)) {
                 prevStateHolders.Remove(elemIndex); // remove it. the ones left at end of frame will be dropped
             } else if (cachedStateHolders.Count > 0) {
                 stateHolder = cachedStateHolders.Pop();
             } else {
-                stateHolder = new ValueStorage<StateKeys>();
+                stateHolder = new ValueStorage<StateKeys, ElementId>();
             }
             attrStateHolder[elemIndex] = stateHolder;
             currStateHolders[elemIndex] = stateHolder;
         }
         internal bool HasState<TState>(int elemIndex)
         {
-            return attrStateHolder[elemIndex].HasValue<TState>(elemIndex);
+            return attrStateHolder[elemIndex].HasValue<TState>(attrId[elemIndex]);
         }
         internal TState GetState<TState>(int elemIndex, bool create = false)
             where TState: new()
         {
-            return attrStateHolder[elemIndex].GetValue<TState>(elemIndex, create);
+            return attrStateHolder[elemIndex].GetValue<TState>(attrId[elemIndex], create);
         }
         internal void SetState<TState>(int elemIndex, TState value)
         {
-            attrStateHolder[elemIndex].SetValue(elemIndex, value);
+            attrStateHolder[elemIndex].SetValue(attrId[elemIndex], value);
         }
         #endregion
 
         #region Data
-        private readonly ValueStorage<DataKeys> dataStorage = new ValueStorage<DataKeys>();
+        private readonly ValueStorage<DataKeys, int> dataStorage = new ValueStorage<DataKeys, int>();
         
         internal bool HasData<TComponent>(int elemIndex)
         {

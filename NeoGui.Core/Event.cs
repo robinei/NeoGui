@@ -16,7 +16,6 @@ namespace NeoGui.Core
     }
 
 
-    public enum MouseButton { Left, Right, Middle }
 
     public class MouseButtonEvent : Event
     {
