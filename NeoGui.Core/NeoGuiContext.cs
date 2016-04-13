@@ -37,9 +37,9 @@ namespace NeoGui.Core
     public class NeoGuiContext
     {
         // categories for TypeKeys
-        private struct StateKeys { }
-        private struct DataKeys { }
-        private struct EventKeys { }
+        internal struct StateKeys { }
+        internal struct DataKeys { }
+        internal struct EventKeys { }
 
         private const int InitialArraySize = 128;
 
@@ -47,6 +47,8 @@ namespace NeoGui.Core
 
         private readonly object rootKey = new object();
         private readonly ValueStorage<StateKeys, ElementId> rootStateHolder = new ValueStorage<StateKeys, ElementId>();
+
+        internal readonly ValueStorage<DataKeys, int> DataStorage = new ValueStorage<DataKeys, int>();
 
         private int elementCount;
         private ElementId[] attrId = new ElementId[InitialArraySize];
@@ -56,6 +58,7 @@ namespace NeoGui.Core
         private int[] attrLevel = new int[InitialArraySize];
         private int[] attrZIndex = new int[InitialArraySize];
         private bool[] attrClipContent = new bool[InitialArraySize];
+        private bool[] attrEnabled = new bool[InitialArraySize];
         private int[] attrKeyCounterIndex = new int[InitialArraySize];
         private ValueStorage<StateKeys, ElementId>[] attrStateHolder = new ValueStorage<StateKeys, ElementId>[InitialArraySize];
         private Rect[] attrRect = new Rect[InitialArraySize];
@@ -105,10 +108,10 @@ namespace NeoGui.Core
             elementCount = 0;
             keyCounters.Clear();
             attrStateHolder[0] = rootStateHolder;
-            attrLevel[0] = -1; // will be overwritten by 0 on next line, since parent is its own child
+            attrLevel[0] = -1; // will be overwritten by 0 on next line, since root is its own child
             CreateElement(new Element(this, 0), rootKey);
 
-            ClearDataStorage();
+            DataStorage.Clear();
             ClearEventListeners();
             ClearTraverseHandlers();
         }
@@ -128,6 +131,8 @@ namespace NeoGui.Core
         internal int[] AttrNextSibling => attrNextSibling;
         internal int[] AttrZIndex => attrZIndex;
         internal bool[] AttrClipContent => attrClipContent;
+        internal bool[] AttrEnabled => attrEnabled;
+        internal ValueStorage<StateKeys, ElementId>[] AttrStateHolder => attrStateHolder;
         internal Rect[] AttrRect => attrRect;
         internal Rect[] AttrAbsRect => attrAbsRect;
         internal Rect[] AttrClipRect => attrClipRect;
@@ -146,6 +151,7 @@ namespace NeoGui.Core
                 Array.Resize(ref attrLevel, newLength);
                 Array.Resize(ref attrZIndex, newLength);
                 Array.Resize(ref attrClipContent, newLength);
+                Array.Resize(ref attrEnabled, newLength);
                 Array.Resize(ref attrKeyCounterIndex, newLength);
                 Array.Resize(ref attrStateHolder, newLength);
                 Array.Resize(ref attrRect, newLength);
@@ -170,10 +176,11 @@ namespace NeoGui.Core
             attrParent[elementCount] = parent.Index;
             attrFirstChild[elementCount] = 0; // we have no children yet
             attrNextSibling[elementCount] = attrFirstChild[parent.Index]; // set parent's first child as next sibling
+            attrFirstChild[parent.Index] = elementCount; // set this element as parent's first child
             attrLevel[elementCount] = attrLevel[parent.Index] + 1;
             attrZIndex[elementCount] = 0;
             attrClipContent[elementCount] = false;
-            attrFirstChild[parent.Index] = elementCount; // set this element as parent's first child
+            attrEnabled[elementCount] = true;
             attrKeyCounterIndex[elementCount] = keyCounterIndex;
             attrStateHolder[elementCount] = attrStateHolder[parent.Index]; // inherit parent state holder
             attrRect[elementCount] = new Rect();
@@ -371,8 +378,12 @@ namespace NeoGui.Core
         }
         internal void AttachStateHolder(int elemIndex)
         {
-            Debug.Assert(elemIndex > 0);
-            Debug.Assert(ReferenceEquals(attrStateHolder[attrParent[elemIndex]], attrStateHolder[elemIndex]));
+            if (elemIndex == 0) {
+                return; // root already has one
+            }
+            if (!ReferenceEquals(attrStateHolder[attrParent[elemIndex]], attrStateHolder[elemIndex])) {
+                return; // if we don't have the same as our parent, the we have already gotten one attached
+            }
             ValueStorage<StateKeys, ElementId> stateHolder;
             if (prevStateHolders.TryGetValue(elemIndex, out stateHolder)) {
                 prevStateHolders.Remove(elemIndex); // remove it. the ones left at end of frame will be dropped
@@ -383,41 +394,6 @@ namespace NeoGui.Core
             }
             attrStateHolder[elemIndex] = stateHolder;
             currStateHolders[elemIndex] = stateHolder;
-        }
-        internal bool HasState<TState>(int elemIndex)
-        {
-            return attrStateHolder[elemIndex].HasValue<TState>(attrId[elemIndex]);
-        }
-        internal TState GetState<TState>(int elemIndex, bool create = false)
-            where TState: new()
-        {
-            return attrStateHolder[elemIndex].GetValue<TState>(attrId[elemIndex], create);
-        }
-        internal void SetState<TState>(int elemIndex, TState value)
-        {
-            attrStateHolder[elemIndex].SetValue(attrId[elemIndex], value);
-        }
-        #endregion
-
-        #region Data
-        private readonly ValueStorage<DataKeys, int> dataStorage = new ValueStorage<DataKeys, int>();
-        
-        internal bool HasData<TComponent>(int elemIndex)
-        {
-            return dataStorage.HasValue<TComponent>(elemIndex);
-        }
-        internal TComponent GetData<TComponent>(int elemIndex, bool create)
-            where TComponent: new()
-        {
-            return dataStorage.GetValue<TComponent>(elemIndex, create);
-        }
-        internal void SetData<TComponent>(int elemIndex, TComponent value)
-        {
-            dataStorage.SetValue(elemIndex, value);
-        }
-        private void ClearDataStorage()
-        {
-            dataStorage.Clear();
         }
         #endregion
 

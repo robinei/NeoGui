@@ -43,48 +43,73 @@ namespace NeoGui.Core
         public bool IntersectsMouse => AbsoluteRect.Contains(Context.Input.MousePos) &&
                                        ClipRect.Contains(Context.Input.MousePos);
 
+
         public void OnDepthDescent(Action<Element> handler) { Context.AddDepthDescentHandler(Index, handler); }
         public void OnDepthAscent(Action<Element> handler) { Context.AddDepthAscentHandler(Index, handler); }
         public void OnTreeDescent(Action<Element> handler) { Context.AddTreeDescentHandler(Index, handler); }
         public void OnTreeAscent(Action<Element> handler) { Context.AddTreeAscentHandler(Index, handler); }
         
+
         public bool Has<TComponent>()
         {
-            return Context.HasData<TComponent>(Index);
+            return Context.DataStorage.HasValue<TComponent>(Index);
         }
-        public TComponent Get<TComponent>(bool create = false)
+        public TComponent Get<TComponent>(TComponent defaultValue = default(TComponent))
+        {
+            return Context.DataStorage.GetValue(Index, defaultValue);
+        }
+        public TComponent GetOrCreate<TComponent>()
             where TComponent: new()
         {
-            return Context.GetData<TComponent>(Index, create);
+            return Context.DataStorage.GetOrCreateValue<TComponent>(Index);
         }
         public void Set<TComponent>(TComponent value)
         {
-            Context.SetData(Index, value);
+            Context.DataStorage.SetValue(Index, value);
         }
         
+
         public bool HasState<TState>()
         {
-            return Context.HasState<TState>(Index);
+            return Context.AttrStateHolder[Index].HasValue<TState>(Context.AttrId[Index]);
         }
-        public TState GetState<TState>(bool create = false)
+        public TState GetState<TState>(TState defaultValue = default(TState))
+        {
+            return Context.AttrStateHolder[Index].GetValue(Context.AttrId[Index], defaultValue);
+        }
+        public TState GetOrCreateState<TState>()
             where TState: new()
         {
-            return Context.GetState<TState>(Index, create);
+            return Context.AttrStateHolder[Index].GetOrCreateValue<TState>(Context.AttrId[Index]);
         }
         public void SetState<TState>(TState value)
         {
-            Context.SetState(Index, value);
+            Context.AttrStateHolder[Index].SetValue(Context.AttrId[Index], value);
         }
         public void AttachStateHolder()
         {
             Context.AttachStateHolder(Index);
         }
+        public TState FindState<TState>(TState defaultValue = default(TState))
+        {
+            var elem = this;
+            while (true) {
+                if (elem.HasState<TState>()) {
+                    return elem.GetState(defaultValue);
+                }
+                if (elem.IsRoot) {
+                    return defaultValue;
+                }
+                elem = elem.Parent;
+            }
+        }
         
-        public Vec2 ToLocalCoord(Vec2 pos)
+
+        public Vec2 ToLocalCoord(Vec2 pos) // pos assumed to be in absolute coordinates
         {
             return pos + (Context.AttrAbsRect[0].Pos - Context.AttrAbsRect[Index].Pos);
         }
-        public Rect ToLocalCoord(Rect rect)
+        public Rect ToLocalCoord(Rect rect) // rect assumed to be in absolute coordinates
         {
             return rect + (Context.AttrAbsRect[0].Pos - Context.AttrAbsRect[Index].Pos);
         }
@@ -97,11 +122,17 @@ namespace NeoGui.Core
             return rect + (Context.AttrAbsRect[sourceCoordSys.Index].Pos - Context.AttrAbsRect[Index].Pos);
         }
 
+
         #region Misc forwarded properties
         public bool ClipContent
         {
             get { return Context.AttrClipContent[Index]; }
             set { Context.AttrClipContent[Index] = value; }
+        }
+        public bool Enabled
+        {
+            get { return Context.AttrEnabled[Index]; }
+            set { Context.AttrEnabled[Index] = value; }
         }
         public int ZIndex
         {
@@ -165,33 +196,22 @@ namespace NeoGui.Core
             }
             return Context.GetHashCode().CompareTo(other.Context.GetHashCode());
         }
-
         public bool Equals(Element other)
         {
             return Context == other.Context && Index == other.Index;
         }
-
         public override bool Equals(object other)
         {
             return other is Element && Equals((Element)other);
         }
-
         public override int GetHashCode()
         {
             unchecked {
                 return (Context.GetHashCode() * 397) ^ Index;
             }
         }
-        
-        public static bool operator ==(Element a, Element b)
-        {
-            return a.Equals(b);
-        }
-
-        public static bool operator !=(Element a, Element b)
-        {
-            return !a.Equals(b);
-        }
+        public static bool operator ==(Element a, Element b) { return a.Equals(b); }
+        public static bool operator !=(Element a, Element b) { return !a.Equals(b); }
         #endregion
         
         #region Child enumeration
@@ -208,15 +228,8 @@ namespace NeoGui.Core
                 this.parentIndex = parentIndex;
             }
 
-            public IEnumerator<Element> GetEnumerator()
-            {
-                return new ChildEnumerator(context, parentIndex);
-            }
-
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return GetEnumerator();
-            }
+            public IEnumerator<Element> GetEnumerator() { return new ChildEnumerator(context, parentIndex); }
+            IEnumerator IEnumerable.GetEnumerator() { return GetEnumerator(); }
         }
 
         private struct ChildEnumerator : IEnumerator<Element>
@@ -233,10 +246,7 @@ namespace NeoGui.Core
                 elemIndex = -1;
             }
 
-            public void Reset()
-            {
-                elemIndex = -1;
-            }
+            public void Reset() { elemIndex = -1; }
 
             public bool MoveNext()
             {
@@ -253,12 +263,9 @@ namespace NeoGui.Core
             }
 
             public Element Current => new Element(context, elemIndex);
-
             object IEnumerator.Current => Current;
 
-            public void Dispose()
-            {
-            }
+            public void Dispose() { }
         }
     }
     #endregion

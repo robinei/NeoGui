@@ -18,30 +18,35 @@ namespace NeoGui.Core
             return dict != null && dict.ContainsKey(key);
         }
 
-        public TValue GetValue<TValue>(TKey key, bool create)
+        public TValue GetValue<TValue>(TKey key, TValue defaultValue = default(TValue))
+        {
+            var typeKey = TypeKeys<TTypeCategory, TValue>.Key;
+            while (typeKey >= dictionaries.Length) {
+                return defaultValue;
+            }
+            var dict = (Dictionary<TKey, TValue>)dictionaries[typeKey];
+            if (dict == null) {
+                return defaultValue;
+            }
+            TValue value;
+            return dict.TryGetValue(key, out value) ? value : defaultValue;
+        }
+
+        public TValue GetOrCreateValue<TValue>(TKey key)
             where TValue: new()
         {
             var typeKey = TypeKeys<TTypeCategory, TValue>.Key;
             while (typeKey >= dictionaries.Length) {
-                if (!create) {
-                    return default(TValue);
-                }
                 Array.Resize(ref dictionaries, dictionaries.Length * 2);
             }
             var dict = (Dictionary<TKey, TValue>)dictionaries[typeKey];
             if (dict == null) {
-                if (!create) {
-                    return default(TValue);
-                }
                 dict = new Dictionary<TKey, TValue>();
                 dictionaries[typeKey] = dict;
             }
             TValue value;
             if (dict.TryGetValue(key, out value)) {
                 return value;
-            }
-            if (!create) {
-                return default(TValue);
             }
             value = new TValue();
             dict[key] = value;

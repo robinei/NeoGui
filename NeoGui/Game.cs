@@ -64,7 +64,7 @@ namespace NeoGui
         
         protected override void Update(GameTime gameTime)
         {
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape)) {
+            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == Microsoft.Xna.Framework.Input.ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape)) {
                 Exit();
             }
 
@@ -93,9 +93,9 @@ namespace NeoGui
             var mouseState = Mouse.GetState();
             rawInput.Time = gameTime.TotalGameTime.TotalSeconds;
             rawInput.MousePos = new Vec2(mouseState.X, mouseState.Y);
-            rawInput.MouseButtonDown[(int)MouseButton.Left] = mouseState.LeftButton == ButtonState.Pressed;
-            rawInput.MouseButtonDown[(int)MouseButton.Right] = mouseState.RightButton == ButtonState.Pressed;
-            rawInput.MouseButtonDown[(int)MouseButton.Middle] = mouseState.MiddleButton == ButtonState.Pressed;
+            rawInput.MouseButtonDown[(int)MouseButton.Left] = mouseState.LeftButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
+            rawInput.MouseButtonDown[(int)MouseButton.Right] = mouseState.RightButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
+            rawInput.MouseButtonDown[(int)MouseButton.Middle] = mouseState.MiddleButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
             ui.SetCurrentInputState(rawInput);
         }
         
@@ -128,7 +128,8 @@ namespace NeoGui
             }
             
             spriteBatch.GraphicsDevice.ScissorRectangle = GraphicsDevice.Viewport.Bounds;
-            string fps = $"fps: {frameRate}  mem: {GC.GetTotalMemory(false)}";
+            var memMegaBytes = GC.GetTotalMemory(false) / (1024.0 * 1024.0);
+            string fps = $"fps: {frameRate}  mem: {memMegaBytes:F1} MB";
             spriteBatch.DrawString(font, fps, new Vector2(5, 1), Color.White);
             spriteBatch.DrawString(font, fps, new Vector2(4, 0), Color.Black);
 
