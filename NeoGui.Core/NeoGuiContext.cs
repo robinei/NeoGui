@@ -65,6 +65,7 @@ namespace NeoGui.Core
         private Rect[] attrAbsRect = new Rect[InitialArraySize]; // absolute coordinates
         private Rect[] attrClipRect = new Rect[InitialArraySize];
         private Action<DrawContext>[] attrDrawFunc = new Action<DrawContext>[InitialArraySize];
+        private Action<Element>[] attrLayoutFunc = new Action<Element>[InitialArraySize];
         
         private readonly List<int> keyCounters = new List<int>();
 
@@ -109,7 +110,9 @@ namespace NeoGui.Core
             keyCounters.Clear();
             attrStateHolder[0] = rootStateHolder;
             attrLevel[0] = -1; // will be overwritten by 0 on next line, since root is its own child
-            CreateElement(new Element(this, 0), rootKey);
+            CreateElement(new Element(this, 0), rootKey); // create root element (pretending it is its own parent)
+            attrFirstChild[0] = -1; // undo root element being its own child
+            attrParent[0] = -1; // undo root element being its own parent
 
             DataStorage.Clear();
             ClearEventListeners();
@@ -118,6 +121,8 @@ namespace NeoGui.Core
 
         public void EndFrame()
         {
+            PropagateDisablement();
+            LayoutElements();
             CalcBottomToTopIndex();
             SortEventListeners();
             CalcRects();
@@ -137,6 +142,7 @@ namespace NeoGui.Core
         internal Rect[] AttrAbsRect => attrAbsRect;
         internal Rect[] AttrClipRect => attrClipRect;
         internal Action<DrawContext>[] AttrDrawFunc => attrDrawFunc;
+        internal Action<Element>[] AttrLayoutFunc => attrLayoutFunc;
         
         public Element Root => new Element(this, 0);
 
@@ -158,6 +164,7 @@ namespace NeoGui.Core
                 Array.Resize(ref attrAbsRect, newLength);
                 Array.Resize(ref attrClipRect, newLength);
                 Array.Resize(ref attrDrawFunc, newLength);
+                Array.Resize(ref attrLayoutFunc, newLength);
             }
 
             int keyIndex;
@@ -174,7 +181,7 @@ namespace NeoGui.Core
 
             attrId[elementCount] = new ElementId(key, keyIndex);
             attrParent[elementCount] = parent.Index;
-            attrFirstChild[elementCount] = 0; // we have no children yet
+            attrFirstChild[elementCount] = -1; // we have no children yet
             attrNextSibling[elementCount] = attrFirstChild[parent.Index]; // set parent's first child as next sibling
             attrFirstChild[parent.Index] = elementCount; // set this element as parent's first child
             attrLevel[elementCount] = attrLevel[parent.Index] + 1;
@@ -185,10 +192,25 @@ namespace NeoGui.Core
             attrStateHolder[elementCount] = attrStateHolder[parent.Index]; // inherit parent state holder
             attrRect[elementCount] = new Rect();
             attrDrawFunc[elementCount] = null;
+            attrLayoutFunc[elementCount] = null;
 
             return new Element(this, elementCount++);
         }
+        
 
+        private void PropagateDisablement()
+        {
+            for (var i = 1; i < elementCount; ++i) {
+                attrEnabled[i] = attrEnabled[i] && attrEnabled[attrParent[i]];
+            }
+        }
+
+        private void LayoutElements()
+        {
+            for (var i = 0; i < elementCount; ++i) {
+                attrLayoutFunc[i]?.Invoke(new Element(this, i));
+            }
+        }
 
         private void CalcRects()
         {
@@ -210,19 +232,17 @@ namespace NeoGui.Core
                 }
             }
         }
+
         
         // mapping of (z-index, level) -> element index, to be sorted and used to determine rendering order
         private readonly List<KeyedValue<Pair<int, int>, int>> bottomToTopIndex = new List<KeyedValue<Pair<int, int>, int>>();
         private void CalcBottomToTopIndex()
         {
             bottomToTopIndex.Clear();
-            for (var elemIndex = 0; elemIndex < elementCount; ++elemIndex) {
+            for (var i = 0; i < elementCount; ++i) {
                 bottomToTopIndex.Add(
                     new KeyedValue<Pair<int, int>, int>(
-                        new Pair<int, int>(attrZIndex[elemIndex], attrLevel[elemIndex]),
-                        elemIndex
-                    )
-                );
+                        new Pair<int, int>(attrZIndex[i], attrLevel[i]), i));
             }
             bottomToTopIndex.Sort();
         }

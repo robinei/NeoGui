@@ -18,11 +18,15 @@ namespace NeoGui.Core
             Context = context;
             Index = index;
         }
-
-        public bool IsRoot => Index == 0;
-        public Element Parent => new Element(Context, Context.AttrParent[Index]);
+        
         public ElementId Id => Context.AttrId[Index];
         public object Key => Id.Key;
+        public bool IsRoot => Index == 0;
+        public Element Parent => new Element(Context, Context.AttrParent[Index]);
+        public Element FirstChild => new Element(Context, Context.AttrFirstChild[Index]);
+        public Element NextSibling => new Element(Context, Context.AttrNextSibling[Index]);
+        public bool HasChildren => Context.AttrFirstChild[Index] > 0;
+        public bool HasNextSibling => Context.AttrNextSibling[Index] > 0;
 
         public Element CreateElement(object key = null)
         {
@@ -40,8 +44,8 @@ namespace NeoGui.Core
             Context.DispatchEvent(this, e);
         }
 
-        public bool IntersectsMouse => AbsoluteRect.Contains(Context.Input.MousePos) &&
-                                       ClipRect.Contains(Context.Input.MousePos);
+        public bool IsUnderMouse => AbsoluteRect.Contains(Context.Input.MousePos) &&
+                                    ClipRect.Contains(Context.Input.MousePos);
 
 
         public void OnDepthDescent(Action<Element> handler) { Context.AddDepthDescentHandler(Index, handler); }
@@ -183,6 +187,12 @@ namespace NeoGui.Core
             get { return Context.AttrDrawFunc[Index]; }
             set { Context.AttrDrawFunc[Index] = value; }
         }
+
+        public Action<Element> Layout
+        {
+            get { return Context.AttrLayoutFunc[Index]; }
+            set { Context.AttrLayoutFunc[Index] = value; }
+        }
         #endregion 
 
         #region Comparison and equality
@@ -243,26 +253,37 @@ namespace NeoGui.Core
                 Debug.Assert(parentIndex >= 0);
                 this.context = context;
                 this.parentIndex = parentIndex;
-                elemIndex = -1;
+                elemIndex = 0;
             }
 
-            public void Reset() { elemIndex = -1; }
+            public void Reset() { elemIndex = 0; }
 
             public bool MoveNext()
             {
                 if (elemIndex > 0) {
                     elemIndex = context.AttrNextSibling[elemIndex];
-                    Debug.Assert(elemIndex >= 0);
+                    Debug.Assert(elemIndex != 0);
                     return elemIndex > 0;
                 }
-                if (elemIndex < 0) {
+                if (elemIndex == 0) {
                     elemIndex = context.AttrFirstChild[parentIndex];
+                    Debug.Assert(elemIndex != 0);
                     return elemIndex > 0;
                 }
                 return false;
             }
 
-            public Element Current => new Element(context, elemIndex);
+            public Element Current
+            {
+                get
+                {
+                    if (elemIndex <= 0) {
+                        throw new InvalidOperationException();
+                    }
+                    return new Element(context, elemIndex);
+                }
+            }
+
             object IEnumerator.Current => Current;
 
             public void Dispose() { }

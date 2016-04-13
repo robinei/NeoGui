@@ -18,6 +18,8 @@ namespace NeoGui.Core
     {
         private InputState prevInput;
         private readonly bool[] mouseButtonDown = new bool[3];
+        private readonly bool[] mouseButtonPressConsumed = new bool[3];
+        private readonly bool[] mouseButtonReleaseConsumed = new bool[3];
 
         public double Time { get; private set; }
         public Vec2 MousePos { get; private set; }
@@ -27,9 +29,11 @@ namespace NeoGui.Core
             prevInput = prev;
             Time = rawInput.Time;
             MousePos = rawInput.MousePos;
-            mouseButtonDown[0] = rawInput.MouseButtonDown[0];
-            mouseButtonDown[1] = rawInput.MouseButtonDown[1];
-            mouseButtonDown[2] = rawInput.MouseButtonDown[2];
+            for (var i = 0; i < 3; ++i) {
+                mouseButtonDown[i] = rawInput.MouseButtonDown[i];
+                mouseButtonPressConsumed[i] = false;
+                mouseButtonReleaseConsumed[i] = false;
+            }
         }
 
         public Vec2 MouseDelta => MousePos - prevInput.MousePos;
@@ -39,13 +43,27 @@ namespace NeoGui.Core
         {
             return mouseButtonDown[(int)button];
         }
-        public bool WasMouseButtonPressed(MouseButton button)
+
+        public bool WasMouseButtonPressed(MouseButton button, bool respectIfConsumed = true)
         {
-            return IsMouseButtonDown(button) && !prevInput.IsMouseButtonDown(button);
+            return IsMouseButtonDown(button) &&
+                   !prevInput.IsMouseButtonDown(button) &&
+                   (!respectIfConsumed || !mouseButtonPressConsumed[(int)button]);
         }
-        public bool WasMouseButtonReleased(MouseButton button)
+        public void ConsumeMouseButtonPressed(MouseButton button)
         {
-            return !IsMouseButtonDown(button) && prevInput.IsMouseButtonDown(button);
+            mouseButtonPressConsumed[(int)button] = true;
+        }
+
+        public bool WasMouseButtonReleased(MouseButton button, bool respectIfConsumed = true)
+        {
+            return !IsMouseButtonDown(button) &&
+                   prevInput.IsMouseButtonDown(button) &&
+                   (!respectIfConsumed || !mouseButtonReleaseConsumed[(int)button]);
+        }
+        public void ConsumeMouseButtonReleased(MouseButton button)
+        {
+            mouseButtonReleaseConsumed[(int)button] = true;
         }
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using NeoGui.Core;
 
 namespace NeoGui
@@ -62,14 +63,15 @@ namespace NeoGui
             }
             if (state.MousePressed) {
                 if (input.WasMouseButtonReleased(MouseButton.Left)) {
-                    if (e.IntersectsMouse) {
+                    if (e.IsUnderMouse) {
                         e.Get<ButtonCallback>().OnClick?.Invoke(e);
                     }
                     state.MousePressed = false;
                 }
             } else {
-                if (input.WasMouseButtonPressed(MouseButton.Left) && e.IntersectsMouse) {
+                if (input.WasMouseButtonPressed(MouseButton.Left) && e.IsUnderMouse) {
                     state.MousePressed = true;
+                    input.ConsumeMouseButtonPressed(MouseButton.Left);
                 }
             }
         }
@@ -95,7 +97,7 @@ namespace NeoGui
             var elem = dc.Target;
             var size = elem.Size;
             var color = Color.Gray;
-            if (elem.Enabled && elem.IntersectsMouse) {
+            if (elem.Enabled && elem.IsUnderMouse) {
                 var state = elem.GetState<ButtonState>();
                 if (state != null) {
                     color = state.MousePressed ? Color.Black : Color.DarkGray;
@@ -127,11 +129,76 @@ namespace NeoGui
 
 
 
+    public class ScrollAreaState
+    {
+        public Vec2 Pos;
+        public Vec2 OrigPos;
+        public Vec2 MouseOrigin;
+        public bool MousePressed;
+    }
+
+    public static class ScrollAreaExt
+    {
+        public static Element CreateScrollArea(this Element parent)
+        {
+            var elem = parent.CreateElement();
+            elem.ClipContent = true;
+            elem.Layout = LayoutScrollArea;
+            elem.OnDepthDescent(OnDepthDescent);
+            return elem;
+        }
+
+        public static void LayoutScrollArea(Element e)
+        {
+            if (!e.HasChildren) {
+                return;
+            }
+            var child = e.FirstChild;
+            Debug.Assert(!child.HasNextSibling);
+            var state = e.GetOrCreateState<ScrollAreaState>();
+            child.Pos = state.Pos;
+        }
+
+        public static void OnDepthDescent(Element e)
+        {
+            var input = e.Context.Input;
+            var state = e.GetOrCreateState<ScrollAreaState>();
+            if (!e.Enabled || !e.HasChildren) {
+                state.MousePressed = false;
+                return;
+            }
+            if (state.MousePressed) {
+                var child = e.FirstChild;
+                Debug.Assert(!child.HasNextSibling);
+                
+                var pos = state.OrigPos + (e.ToLocalCoord(input.MousePos) - state.MouseOrigin);
+
+                if (pos.X + child.Width < e.Width) { pos.X = e.Width - child.Width; }
+                if (pos.Y + child.Height < e.Height) { pos.Y = e.Height - child.Height; }
+                if (pos.X > 0) { pos.X = 0; }
+                if (pos.Y > 0) { pos.Y = 0; }
+
+                state.Pos = pos;
+
+                if (input.WasMouseButtonReleased(MouseButton.Left)) {
+                    state.MousePressed = false;
+                }
+            } else if (input.WasMouseButtonPressed(MouseButton.Left) && e.IsUnderMouse) {
+                state.MousePressed = true;
+                state.MouseOrigin = e.ToLocalCoord(input.MousePos);
+                state.OrigPos = state.Pos;
+                input.ConsumeMouseButtonPressed(MouseButton.Left);
+            }
+        }
+    }
+
+
+
     public static class TestUi
     {
         private class TestState
         {
-            public int ActiveTab;
+            public int ActiveTab = 1;
             public int NumButtons = 3;
         }
 
@@ -182,8 +249,8 @@ namespace NeoGui
                     var tab0 = panel.CreateElement();
                     tab0.Rect = new Rect(0, 30, 300, 550);
 
-                    var label = tab0.CreateLabel("This is tab 0", Color.Black);
-                    label.Rect = new Rect(10, 10, 100, 30);
+                    var titleLabel = tab0.CreateLabel("This is tab 0", Color.Black);
+                    titleLabel.Rect = new Rect(10, 10, 100, 30);
 
                     var addButton = tab0.CreateTextButton("Add", e => {
                         e.FindState<TestState>().NumButtons++;
@@ -205,8 +272,24 @@ namespace NeoGui
                     var tab1 = panel.CreateElement();
                     tab1.Rect = new Rect(0, 30, 300, 550);
 
-                    var label = tab1.CreateLabel("This is tab 1", Color.Black);
+                    var titleLabel = tab1.CreateLabel("This is tab 1", Color.Black);
+                    titleLabel.Rect = new Rect(10, 10, 100, 30);
+                    
+                    var scrollArea = tab1.CreateScrollArea();
+                    scrollArea.Rect = new Rect(10, 50, 200, 200);
+                    scrollArea.Set(new BackgroundColor { Value = Color.Red });
+                    scrollArea.Draw = DrawFuncs.DrawBackgroundColor;
+
+                    var contentPanel = scrollArea.CreateElement();
+                    contentPanel.Rect = new Rect(0, 0, 250, 250);
+                    contentPanel.Set(new BackgroundColor { Value = new Color(220, 220, 220) });
+                    contentPanel.Draw = DrawFuncs.DrawBackgroundColor;
+
+                    var label = contentPanel.CreateLabel("Drag me", Color.Black);
                     label.Rect = new Rect(10, 10, 100, 30);
+
+                    var button = contentPanel.CreateTextButton("Hello", e => Debug.WriteLine("Hello"));
+                    button.Rect = new Rect(10, 50, 100, 30);
                 }
             }
 
