@@ -46,7 +46,6 @@
     <Compile Include="DrawCommand.cs" />
     <Compile Include="Element.cs" />
     <Compile Include="ElementId.cs" />
-    <Compile Include="Event.cs" />
     <Compile Include="KeyedValue.cs" />
     <Compile Include="Pair.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

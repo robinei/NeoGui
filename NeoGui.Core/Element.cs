@@ -33,17 +33,6 @@ namespace NeoGui.Core
         public bool HasChildren => Context.AttrFirstChild[Index] > 0;
         public bool HasNextSibling => Context.AttrNextSibling[Index] > 0;
 
-        public void AddEventListener<TEvent>(Action<TEvent> listener, bool capture = false)
-            where TEvent : Event
-        {
-            Context.AddEventListener(Index, typeof(TEvent), listener, capture);
-        }
-        public void DispatchEvent<TEvent>(TEvent e)
-            where TEvent : Event
-        {
-            Context.DispatchEvent(this, e);
-        }
-
         public bool IsUnderMouse => AbsoluteRect.Contains(Context.Input.MousePos) &&
                                     ClipRect.Contains(Context.Input.MousePos);
 

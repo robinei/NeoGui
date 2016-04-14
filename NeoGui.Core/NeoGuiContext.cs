@@ -116,7 +116,6 @@ namespace NeoGui.Core
             attrParent[0] = -1; // undo root element being its own parent
 
             DataStorage.Clear();
-            ClearEventListeners();
             ClearTraverseHandlers();
         }
 
@@ -125,7 +124,6 @@ namespace NeoGui.Core
             PropagateDisablement();
             LayoutElements();
             CalcBottomToTopIndex();
-            SortEventListeners();
             CalcRects();
             DrawElements();
             inFrame = false;
@@ -418,148 +416,6 @@ namespace NeoGui.Core
             }
             attrStateHolder[elemIndex] = stateHolder;
             currStateHolders[elemIndex] = stateHolder;
-        }
-        #endregion
-
-        #region Events
-        private struct EventListener
-        {
-            public Delegate Action;
-            public bool Capture;
-        }
-        private int eventListenerCount;
-        private KeyedValue<Pair<int, int>, EventListener>[] eventListeners = new KeyedValue<Pair<int, int>, EventListener>[128];
-
-        private void ClearEventListeners()
-        {
-            eventListenerCount = 0;
-        }
-
-        private void SortEventListeners()
-        {
-            Array.Sort(eventListeners);
-        }
-
-        internal void AddEventListener<TEvent>(int elemIndex, Type eventType, Action<TEvent> action, bool capture = false)
-            where TEvent : Event
-        {
-            Debug.Assert(action != null);
-            if (eventListenerCount == eventListeners.Length) {
-                Array.Resize(ref eventListeners, eventListeners.Length*2);
-            }
-            eventListeners[eventListenerCount++] = new KeyedValue<Pair<int, int>, EventListener>(
-                new Pair<int, int>(elemIndex, TypeKeys<EventKeys, TEvent>.Key),
-                new EventListener { Action = action, Capture = capture }
-            );
-        }
-
-        private void LookupEventListeners(Pair<int, int> key, List<EventListener> result)
-        {
-            var i = Array.BinarySearch(eventListeners, new KeyedValue<Pair<int, int>, EventListener>(key));
-            if (i < 0) return;
-            for (; i < eventListenerCount && eventListeners[i].Key == key; ++i) {
-                result.Add(eventListeners[i].Value);
-            }
-        }
-        
-        // used for storing the dispatcher lists so they can be reused across dispatches
-        private struct DispatchLists
-        {
-            public List<Range> Ranges;
-            public List<EventListener> Listeners;
-        }
-        private struct Range { public int Start, End; }
-        private readonly Stack<DispatchLists> dispatchStack = new Stack<DispatchLists>();
-
-        internal void DispatchEvent<TEvent>(Element elem, TEvent e)
-            where TEvent : Event
-        {
-            Debug.Assert(!inFrame);
-
-            e.Target = elem;
-            e.PropagationStopped = false;
-
-            DispatchLists lists;
-            if (dispatchStack.Count > 0) {
-                lists = dispatchStack.Pop();
-            } else {
-                lists = new DispatchLists {
-                    Ranges = new List<Range>(),
-                    Listeners = new List<EventListener>()
-                };
-            }
-
-            try {
-                var ranges = lists.Ranges;
-                var listeners = lists.Listeners;
-                ranges.Clear();
-                listeners.Clear();
-
-                // collect all listeners from elem to root in an array, and collect
-                // ranges which record which listeners belong to which elems
-                while (true) {
-                    Range r;
-                    r.Start = listeners.Count;
-                    LookupEventListeners(new Pair<int, int>(elem.Index, TypeKeys<EventKeys, TEvent>.Key), listeners);
-                    r.End = listeners.Count;
-                    if (r.End > r.Start) {
-                        ranges.Add(r);
-                    }
-                    if (elem.IsRoot) {
-                        break;
-                    }
-                    elem = elem.Parent;
-                }
-
-                if (ranges.Count == 0) {
-                    return;
-                }
-
-                // capture phase
-                for (var i = ranges.Count - 1; i > 0; --i) {
-                    var r = ranges[i];
-                    for (var j = r.Start; j < r.End; ++j) {
-                        if (listeners[j].Capture) {
-                            ((Action<TEvent>)listeners[j].Action)(e);
-                        }
-                    }
-                    if (e.PropagationStopped) {
-                        return;
-                    }
-                }
-
-                // at target
-                {
-                    var r = ranges[0];
-                    for (var j = r.Start; j < r.End; ++j) {
-                        if (!listeners[j].Capture) {
-                            ((Action<TEvent>)listeners[j].Action)(e);
-                        }
-                    }
-                    if (e.PropagationStopped) {
-                        return;
-                    }
-                }
-
-                if (!e.Bubbles) {
-                    return;
-                }
-
-                // bubble phase
-                for (var i = 1; i < ranges.Count; ++i) {
-                    var r = ranges[i];
-                    for (var j = r.Start; j < r.End; ++j) {
-                        if (!listeners[j].Capture) {
-                            ((Action<TEvent>)listeners[j].Action)(e);
-                        }
-                    }
-                    if (e.PropagationStopped) {
-                        return;
-                    }
-                }
-            } finally {
-                dispatchStack.Push(lists);
-            }
         }
         #endregion
     }
