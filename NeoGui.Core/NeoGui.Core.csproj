@@ -38,7 +38,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Color.cs" />
-    <Compile Include="InputState.cs" />
+    <Compile Include="InputContext.cs" />
     <Compile Include="NeoGuiContext.cs" />
     <Compile Include="DrawContext.cs" />
     <Compile Include="INeoGuiDelegate.cs" />

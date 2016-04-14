@@ -41,5 +41,7 @@ namespace NeoGui.Core
             return !a.Equals(b);
         }
         #endregion
+
+        public static readonly ElementId None = new ElementId(null, 0);
     }
 }

@@ -44,11 +44,11 @@ namespace NeoGui.Core
         public readonly INeoGuiDelegate Delegate;
 
         private readonly object rootKey = new object();
+        private readonly List<int> keyCounters = new List<int>();
         private readonly ValueStorage<StateKeys, ElementId> rootStateHolder = new ValueStorage<StateKeys, ElementId>();
 
-        internal readonly ValueStorage<DataKeys, int> DataStorage = new ValueStorage<DataKeys, int>();
-
         private int elementCount;
+
         internal ElementId[] AttrId = new ElementId[InitialArraySize];
         internal string[] AttrName = new string[InitialArraySize];
         internal int[] AttrParent = new int[InitialArraySize];
@@ -65,34 +65,43 @@ namespace NeoGui.Core
         internal Rect[] AttrClipRect = new Rect[InitialArraySize];
         internal Action<DrawContext>[] AttrDrawFunc = new Action<DrawContext>[InitialArraySize];
         internal Action<Element>[] AttrLayoutFunc = new Action<Element>[InitialArraySize];
+
+        // extra data which we don't deign to make an array for above goes here...
+        internal readonly ValueStorage<DataKeys, int> DataStorage = new ValueStorage<DataKeys, int>();
         
-        private readonly List<int> keyCounters = new List<int>();
+        internal readonly Dictionary<ElementId, int> IdToIndexMap = new Dictionary<ElementId, int>();
 
-
+        
         private bool hasSetInputStateOnce;
-        private InputState prevInput = new InputState();
-        private InputState currInput = new InputState();
-        public InputState Input => currInput;
-        public void SetCurrentInputState(RawInputState rawInput)
+        private readonly InputTracker inputTracker;
+        private InputContext prevInput;
+        private InputContext currInput;
+        public InputContext Input => currInput;
+        public void SetCurrentInputState(InputState input)
         {
-            RotateInputsAndSetState(rawInput);
+            RotateInputsAndSetRawState(input);
             if (!hasSetInputStateOnce) {
-                RotateInputsAndSetState(rawInput);
+                // set it twice the first time, so the two are equal, meaning no edge triggers
+                RotateInputsAndSetRawState(input);
                 hasSetInputStateOnce = true;
             }
         }
-        private void RotateInputsAndSetState(RawInputState rawInput)
+        private void RotateInputsAndSetRawState(InputState input)
         {
             var temp = prevInput;
             prevInput = currInput;
             currInput = temp;
-            currInput.Reset(prevInput, rawInput);
+            currInput.SetRawState(prevInput, input);
+            inputTracker.Input = currInput;
         }
 
 
         public NeoGuiContext(INeoGuiDelegate del)
         {
             Delegate = del;
+            inputTracker = new InputTracker(this);
+            prevInput = new InputContext(this, inputTracker);
+            currInput = new InputContext(this, inputTracker);
         }
 
         public void BeginFrame()
@@ -101,6 +110,7 @@ namespace NeoGui.Core
 
             elementCount = 0;
             keyCounters.Clear();
+            IdToIndexMap.Clear();
             AttrStateHolder[0] = rootStateHolder;
             AttrLevel[0] = -1; // will be overwritten by 0 on next line, since root is its own child
             CreateElement(new Element(this, 0), rootKey); // create root element (pretending it is its own parent)
@@ -171,6 +181,8 @@ namespace NeoGui.Core
             AttrRect[elementCount] = new Rect();
             AttrDrawFunc[elementCount] = null;
             AttrLayoutFunc[elementCount] = null;
+
+            IdToIndexMap[AttrId[elementCount]] = elementCount;
 
             return new Element(this, elementCount++);
         }
@@ -325,6 +337,8 @@ namespace NeoGui.Core
         }
         public void RunUpdateTraversals()
         {
+            inputTracker.PreUiUpdate();
+
             for (var i = 0; i < depthDescentHandlers.Count; ++i) { // rewrite now that we can know z-index
                 var elemIndex = depthDescentHandlers[i].ElemIndex;
                 long key = (AttrZIndex[elemIndex] << 32) | AttrLevel[elemIndex];
@@ -354,6 +368,8 @@ namespace NeoGui.Core
             for (var i = treeAscentHandlers.Count - 1; i >= 0; --i) {
                 treeAscentHandlers[i].Handler(new Element(this, treeAscentHandlers[i].ElemIndex));
             }
+
+            inputTracker.PostUiUpdate();
         }
         #endregion
 

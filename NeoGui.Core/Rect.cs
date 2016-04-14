@@ -33,23 +33,23 @@ namespace NeoGui.Core
             Pos = pos;
             Size = size;
         }
+        public Rect(float x, float y, float width, float height)
+        {
+            Pos = new Vec2(x, y);
+            Size = new Vec2(width, height);
+        }
         public Rect(Vec2 size)
         {
             Pos = Vec2.Zero;
             Size = size;
         }
-        public Rect(float x, float y, float width, float height)
+        public Rect(float width, float height)
         {
-            Pos.X = x;
-            Pos.Y = y;
-            Size.X = width;
-            Size.Y = height;
+            Pos = Vec2.Zero;
+            Size = new Vec2(width, height);
         }
 
-        public bool Contains(Vec2 p)
-        {
-            return !(p.X < X || p.Y < Y || p.X > X + Width || p.Y > Y + Height);
-        }
+        public bool Contains(Vec2 p) => !(p.X < X || p.Y < Y || p.X > X + Width || p.Y > Y + Height);
 
         public Rect Intersection(Rect r)
         {
@@ -63,19 +63,10 @@ namespace NeoGui.Core
             return Empty;
         }
 
-        public static Rect operator +(Rect r, Vec2 v)
-        {
-            return  new Rect(r.Pos + v, r.Size);
-        }
-        public static Rect operator +(Vec2 v, Rect r)
-        {
-            return  new Rect(v + r.Pos, r.Size);
-        }
+        public static Rect operator +(Rect r, Vec2 v) => new Rect(r.Pos + v, r.Size);
+        public static Rect operator +(Vec2 v, Rect r) => new Rect(v + r.Pos, r.Size);
 
-        public override string ToString()
-        {
-            return $"Rect({X}, {Y}, {Width}, {Height})";
-        }
+        public override string ToString() => $"Rect({X}, {Y}, {Width}, {Height})";
 
         public static readonly Rect Empty = new Rect(0, 0, 0, 0);
     }

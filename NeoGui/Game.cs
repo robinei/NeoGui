@@ -17,7 +17,7 @@ namespace NeoGui
         private Texture2D pixel;
         
         private bool inputInited;
-        private readonly RawInputState rawInput = new RawInputState();
+        private readonly InputState input = new InputState();
         private NeoGuiContext ui;
 
         private int frameRate = 0;
@@ -91,12 +91,12 @@ namespace NeoGui
         private void UpdateInput(GameTime gameTime)
         {
             var mouseState = Mouse.GetState();
-            rawInput.Time = gameTime.TotalGameTime.TotalSeconds;
-            rawInput.MousePos = new Vec2(mouseState.X, mouseState.Y);
-            rawInput.MouseButtonDown[(int)MouseButton.Left] = mouseState.LeftButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
-            rawInput.MouseButtonDown[(int)MouseButton.Right] = mouseState.RightButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
-            rawInput.MouseButtonDown[(int)MouseButton.Middle] = mouseState.MiddleButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
-            ui.SetCurrentInputState(rawInput);
+            input.Time = gameTime.TotalGameTime.TotalSeconds;
+            input.MousePos = new Vec2(mouseState.X, mouseState.Y);
+            input.MouseButtonDown[(int)MouseButton.Left] = mouseState.LeftButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
+            input.MouseButtonDown[(int)MouseButton.Right] = mouseState.RightButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
+            input.MouseButtonDown[(int)MouseButton.Middle] = mouseState.MiddleButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
+            ui.SetCurrentInputState(input);
         }
         
         protected override void Draw(GameTime gameTime)

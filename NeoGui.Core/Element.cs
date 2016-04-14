@@ -97,18 +97,28 @@ namespace NeoGui.Core
             }
         }
         
+        
+        public float ToLocalScale(float f) // pos assumed to be in absolute coordinates
+        {
+            return f; // TODO: change this impl when scaling is added
+        }
+        public float ToLocalScale(float f, Element sourceCoordSys)
+        {
+            return f; // TODO: change this impl when scaling is added
+        }
 
         public Vec2 ToLocalCoord(Vec2 pos) // pos assumed to be in absolute coordinates
         {
             return pos + (Context.AttrAbsRect[0].Pos - Context.AttrAbsRect[Index].Pos);
         }
-        public Rect ToLocalCoord(Rect rect) // rect assumed to be in absolute coordinates
-        {
-            return rect + (Context.AttrAbsRect[0].Pos - Context.AttrAbsRect[Index].Pos);
-        }
         public Vec2 ToLocalCoord(Vec2 pos, Element sourceCoordSys)
         {
             return pos + (Context.AttrAbsRect[sourceCoordSys.Index].Pos - Context.AttrAbsRect[Index].Pos);
+        }
+
+        public Rect ToLocalCoord(Rect rect) // rect assumed to be in absolute coordinates
+        {
+            return rect + (Context.AttrAbsRect[0].Pos - Context.AttrAbsRect[Index].Pos);
         }
         public Rect ToLocalCoord(Rect rect, Element sourceCoordSys)
         {

@@ -135,8 +135,7 @@ namespace NeoGui
     {
         public Vec2 Pos;
         public Vec2 OrigPos;
-        public Vec2 MouseOrigin;
-        public bool MousePressed;
+        public bool IsDragging;
     }
 
     public static class ScrollArea
@@ -185,31 +184,40 @@ namespace NeoGui
 
         private static void OnDepthDescent(Element scrollArea)
         {
-            var input = scrollArea.Context.Input;
             var state = scrollArea.GetOrCreateState<ScrollAreaState>();
             if (!scrollArea.Enabled) {
-                state.MousePressed = false;
+                state.IsDragging = false;
                 return;
             }
-            if (state.MousePressed) {
-                var pos = state.OrigPos + (scrollArea.ToLocalCoord(input.MousePos) - state.MouseOrigin);
+            var input = scrollArea.Context.Input;
+            if (state.IsDragging) {
+                if (!input.IsDragging) {
+                    state.IsDragging = false;
+                    return;
+                }
                 
                 var content = GetContentPanel(scrollArea);
+
+                // apply the whole DragVector
+                var s = scrollArea.ToLocalScale(1.0f);
+                var pos = state.OrigPos + input.DragVector * s;
+                
+                // move pos back if we went out of bounds
                 if (pos.X + content.Width < scrollArea.Width) { pos.X = scrollArea.Width - content.Width; }
                 if (pos.Y + content.Height < scrollArea.Height) { pos.Y = scrollArea.Height - content.Height; }
                 if (pos.X > 0) { pos.X = 0; }
                 if (pos.Y > 0) { pos.Y = 0; }
 
-                state.Pos = pos;
+                // subtract the part of the DragVector that we "used".
+                // what's left can be "used" by someone further up the hierarchy
+                input.DragVector -= (pos - state.OrigPos) * (1.0f / s);
 
-                if (input.WasMouseButtonReleased(MouseButton.Left)) {
-                    state.MousePressed = false;
-                }
-            } else if (input.WasMouseButtonPressed(MouseButton.Left) && scrollArea.IsUnderMouse) {
-                state.MousePressed = true;
-                state.MouseOrigin = scrollArea.ToLocalCoord(input.MousePos);
+                state.Pos = pos;
+            } else if (input.IsDragging &&
+                       scrollArea.AbsoluteRect.Contains(input.TrueDragOrigin) &&
+                       scrollArea.ClipRect.Contains(input.TrueDragOrigin)) {
+                state.IsDragging = true;
                 state.OrigPos = state.Pos;
-                input.ConsumeMouseButtonPressed(MouseButton.Left);
             }
         }
 
@@ -267,7 +275,7 @@ namespace NeoGui
             if (panelVisible) {
                 var panel = Element.Create(root);
                 panel.AttachStateHolder();
-                panel.Rect = new Rect(70, 80, 300, 600);
+                panel.Rect = new Rect(70, 80, 500, 600);
                 panel.ClipContent = true;
                 panel.Set(new BackgroundColor {Value = Color.LightGray});
                 panel.Draw = DrawFuncs.DrawBackgroundColor;
@@ -316,8 +324,18 @@ namespace NeoGui
                     var titleLabel = Label.Create(tab1, "This is tab 1", Color.Black);
                     titleLabel.Rect = new Rect(10, 10, 100, 30);
                     
-                    var scrollArea = ScrollArea.Create(tab1);
-                    scrollArea.Rect = new Rect(10, 50, 200, 200);
+                    
+                    var outerScrollArea = ScrollArea.Create(tab1);
+                    outerScrollArea.Rect = new Rect(10, 40, 300, 300);
+                    
+                    var outerContentPanel = ScrollArea.GetContentPanel(outerScrollArea);
+                    outerContentPanel.Size = new Vec2(500, 500);
+                    outerContentPanel.Set(new BackgroundColor { Value = new Color(240, 240, 240) });
+                    outerContentPanel.Draw = DrawFuncs.DrawBackgroundColor;
+
+
+                    var scrollArea = ScrollArea.Create(outerContentPanel);
+                    scrollArea.Rect = new Rect(50, 50, 200, 200);
 
                     var contentPanel = ScrollArea.GetContentPanel(scrollArea);
                     contentPanel.Size = new Vec2(250, 250);
