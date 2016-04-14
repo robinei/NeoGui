@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Diagnostics;
 
 namespace NeoGui.Core
 {
@@ -360,8 +358,8 @@ namespace NeoGui.Core
         #endregion
 
         #region State
-        private Dictionary<int, ValueStorage<StateKeys, ElementId>> prevStateHolders = new Dictionary<int, ValueStorage<StateKeys, ElementId>>();
-        private Dictionary<int, ValueStorage<StateKeys, ElementId>> currStateHolders = new Dictionary<int, ValueStorage<StateKeys, ElementId>>();
+        private Dictionary<ElementId, ValueStorage<StateKeys, ElementId>> prevStateHolders = new Dictionary<ElementId, ValueStorage<StateKeys, ElementId>>();
+        private Dictionary<ElementId, ValueStorage<StateKeys, ElementId>> currStateHolders = new Dictionary<ElementId, ValueStorage<StateKeys, ElementId>>();
         private readonly Stack<ValueStorage<StateKeys, ElementId>> cachedStateHolders = new Stack<ValueStorage<StateKeys, ElementId>>(); // for reuse, so we don't generate garbage
         
         private void FlipStateHolders()
@@ -384,16 +382,17 @@ namespace NeoGui.Core
             if (!ReferenceEquals(AttrStateHolder[AttrParent[elemIndex]], AttrStateHolder[elemIndex])) {
                 return; // if we don't have the same as our parent, the we have already gotten one attached
             }
+            var id = AttrId[elemIndex];
             ValueStorage<StateKeys, ElementId> stateHolder;
-            if (prevStateHolders.TryGetValue(elemIndex, out stateHolder)) {
-                prevStateHolders.Remove(elemIndex); // remove it. the ones left at end of frame will be dropped
+            if (prevStateHolders.TryGetValue(id, out stateHolder)) {
+                prevStateHolders.Remove(id); // remove it. the ones left at end of frame will be dropped
             } else if (cachedStateHolders.Count > 0) {
                 stateHolder = cachedStateHolders.Pop();
             } else {
                 stateHolder = new ValueStorage<StateKeys, ElementId>();
             }
             AttrStateHolder[elemIndex] = stateHolder;
-            currStateHolders[elemIndex] = stateHolder;
+            currStateHolders[id] = stateHolder;
         }
         #endregion
     }
