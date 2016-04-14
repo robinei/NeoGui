@@ -51,22 +51,22 @@ namespace NeoGui.Core
         internal readonly ValueStorage<DataKeys, int> DataStorage = new ValueStorage<DataKeys, int>();
 
         private int elementCount;
-        private ElementId[] attrId = new ElementId[InitialArraySize];
-        private string[] attrName = new string[InitialArraySize];
-        private int[] attrParent = new int[InitialArraySize];
-        private int[] attrFirstChild = new int[InitialArraySize];
-        private int[] attrNextSibling = new int[InitialArraySize];
-        private int[] attrLevel = new int[InitialArraySize];
-        private int[] attrZIndex = new int[InitialArraySize];
-        private bool[] attrClipContent = new bool[InitialArraySize];
-        private bool[] attrEnabled = new bool[InitialArraySize];
-        private int[] attrKeyCounterIndex = new int[InitialArraySize];
-        private ValueStorage<StateKeys, ElementId>[] attrStateHolder = new ValueStorage<StateKeys, ElementId>[InitialArraySize];
-        private Rect[] attrRect = new Rect[InitialArraySize];
-        private Rect[] attrAbsRect = new Rect[InitialArraySize]; // absolute coordinates
-        private Rect[] attrClipRect = new Rect[InitialArraySize];
-        private Action<DrawContext>[] attrDrawFunc = new Action<DrawContext>[InitialArraySize];
-        private Action<Element>[] attrLayoutFunc = new Action<Element>[InitialArraySize];
+        internal ElementId[] AttrId = new ElementId[InitialArraySize];
+        internal string[] AttrName = new string[InitialArraySize];
+        internal int[] AttrParent = new int[InitialArraySize];
+        internal int[] AttrFirstChild = new int[InitialArraySize];
+        internal int[] AttrNextSibling = new int[InitialArraySize];
+        internal int[] AttrLevel = new int[InitialArraySize];
+        internal int[] AttrZIndex = new int[InitialArraySize];
+        internal bool[] AttrClipContent = new bool[InitialArraySize];
+        internal bool[] AttrEnabled = new bool[InitialArraySize];
+        internal int[] AttrKeyCounterIndex = new int[InitialArraySize];
+        internal ValueStorage<StateKeys, ElementId>[] AttrStateHolder = new ValueStorage<StateKeys, ElementId>[InitialArraySize];
+        internal Rect[] AttrRect = new Rect[InitialArraySize];
+        internal Rect[] AttrAbsRect = new Rect[InitialArraySize]; // absolute coordinates
+        internal Rect[] AttrClipRect = new Rect[InitialArraySize];
+        internal Action<DrawContext>[] AttrDrawFunc = new Action<DrawContext>[InitialArraySize];
+        internal Action<Element>[] AttrLayoutFunc = new Action<Element>[InitialArraySize];
         
         private readonly List<int> keyCounters = new List<int>();
 
@@ -91,10 +91,6 @@ namespace NeoGui.Core
             currInput.Reset(prevInput, rawInput);
         }
 
-        
-
-        private bool inFrame;
-
 
         public NeoGuiContext(INeoGuiDelegate del)
         {
@@ -103,17 +99,15 @@ namespace NeoGui.Core
 
         public void BeginFrame()
         {
-            inFrame = true;
-            
             FlipStateHolders();
 
             elementCount = 0;
             keyCounters.Clear();
-            attrStateHolder[0] = rootStateHolder;
-            attrLevel[0] = -1; // will be overwritten by 0 on next line, since root is its own child
+            AttrStateHolder[0] = rootStateHolder;
+            AttrLevel[0] = -1; // will be overwritten by 0 on next line, since root is its own child
             CreateElement(new Element(this, 0), rootKey); // create root element (pretending it is its own parent)
-            attrFirstChild[0] = -1; // undo root element being its own child
-            attrParent[0] = -1; // undo root element being its own parent
+            AttrFirstChild[0] = -1; // undo root element being its own child
+            AttrParent[0] = -1; // undo root element being its own parent
 
             DataStorage.Clear();
             ClearTraverseHandlers();
@@ -126,53 +120,37 @@ namespace NeoGui.Core
             CalcBottomToTopIndex();
             CalcRects();
             DrawElements();
-            inFrame = false;
         }
-
-        internal ElementId[] AttrId => attrId;
-        internal string[] AttrName => attrName;
-        internal int[] AttrParent => attrParent;
-        internal int[] AttrFirstChild => attrFirstChild;
-        internal int[] AttrNextSibling => attrNextSibling;
-        internal int[] AttrZIndex => attrZIndex;
-        internal bool[] AttrClipContent => attrClipContent;
-        internal bool[] AttrEnabled => attrEnabled;
-        internal ValueStorage<StateKeys, ElementId>[] AttrStateHolder => attrStateHolder;
-        internal Rect[] AttrRect => attrRect;
-        internal Rect[] AttrAbsRect => attrAbsRect;
-        internal Rect[] AttrClipRect => attrClipRect;
-        internal Action<DrawContext>[] AttrDrawFunc => attrDrawFunc;
-        internal Action<Element>[] AttrLayoutFunc => attrLayoutFunc;
         
         public Element Root => new Element(this, 0);
 
         internal Element CreateElement(Element parent, object key)
         {
-            if (elementCount == attrId.Length) {
-                var newLength = attrId.Length * 2;
-                Array.Resize(ref attrId, newLength);
-                Array.Resize(ref attrName, newLength);
-                Array.Resize(ref attrParent, newLength);
-                Array.Resize(ref attrFirstChild, newLength);
-                Array.Resize(ref attrNextSibling, newLength);
-                Array.Resize(ref attrLevel, newLength);
-                Array.Resize(ref attrZIndex, newLength);
-                Array.Resize(ref attrClipContent, newLength);
-                Array.Resize(ref attrEnabled, newLength);
-                Array.Resize(ref attrKeyCounterIndex, newLength);
-                Array.Resize(ref attrStateHolder, newLength);
-                Array.Resize(ref attrRect, newLength);
-                Array.Resize(ref attrAbsRect, newLength);
-                Array.Resize(ref attrClipRect, newLength);
-                Array.Resize(ref attrDrawFunc, newLength);
-                Array.Resize(ref attrLayoutFunc, newLength);
+            if (elementCount == AttrId.Length) {
+                var newLength = AttrId.Length * 2;
+                Array.Resize(ref AttrId, newLength);
+                Array.Resize(ref AttrName, newLength);
+                Array.Resize(ref AttrParent, newLength);
+                Array.Resize(ref AttrFirstChild, newLength);
+                Array.Resize(ref AttrNextSibling, newLength);
+                Array.Resize(ref AttrLevel, newLength);
+                Array.Resize(ref AttrZIndex, newLength);
+                Array.Resize(ref AttrClipContent, newLength);
+                Array.Resize(ref AttrEnabled, newLength);
+                Array.Resize(ref AttrKeyCounterIndex, newLength);
+                Array.Resize(ref AttrStateHolder, newLength);
+                Array.Resize(ref AttrRect, newLength);
+                Array.Resize(ref AttrAbsRect, newLength);
+                Array.Resize(ref AttrClipRect, newLength);
+                Array.Resize(ref AttrDrawFunc, newLength);
+                Array.Resize(ref AttrLayoutFunc, newLength);
             }
 
             int keyIndex;
             int keyCounterIndex;
             if (key == null) {
                 key = parent.Key;
-                keyCounterIndex = attrKeyCounterIndex[parent.Index];
+                keyCounterIndex = AttrKeyCounterIndex[parent.Index];
                 keyIndex = ++keyCounters[keyCounterIndex];
             } else {
                 keyIndex = 0;
@@ -180,21 +158,21 @@ namespace NeoGui.Core
                 keyCounters.Add(0);
             }
 
-            attrId[elementCount] = new ElementId(key, keyIndex);
-            attrName[elementCount] = "";
-            attrParent[elementCount] = parent.Index;
-            attrFirstChild[elementCount] = -1; // we have no children yet
-            attrNextSibling[elementCount] = attrFirstChild[parent.Index]; // set parent's first child as next sibling
-            attrFirstChild[parent.Index] = elementCount; // set this element as parent's first child
-            attrLevel[elementCount] = attrLevel[parent.Index] + 1;
-            attrZIndex[elementCount] = 0;
-            attrClipContent[elementCount] = false;
-            attrEnabled[elementCount] = true;
-            attrKeyCounterIndex[elementCount] = keyCounterIndex;
-            attrStateHolder[elementCount] = attrStateHolder[parent.Index]; // inherit parent state holder
-            attrRect[elementCount] = new Rect();
-            attrDrawFunc[elementCount] = null;
-            attrLayoutFunc[elementCount] = null;
+            AttrId[elementCount] = new ElementId(key, keyIndex);
+            AttrName[elementCount] = "";
+            AttrParent[elementCount] = parent.Index;
+            AttrFirstChild[elementCount] = -1; // we have no children yet
+            AttrNextSibling[elementCount] = AttrFirstChild[parent.Index]; // set parent's first child as next sibling
+            AttrFirstChild[parent.Index] = elementCount; // set this element as parent's first child
+            AttrLevel[elementCount] = AttrLevel[parent.Index] + 1;
+            AttrZIndex[elementCount] = 0;
+            AttrClipContent[elementCount] = false;
+            AttrEnabled[elementCount] = true;
+            AttrKeyCounterIndex[elementCount] = keyCounterIndex;
+            AttrStateHolder[elementCount] = AttrStateHolder[parent.Index]; // inherit parent state holder
+            AttrRect[elementCount] = new Rect();
+            AttrDrawFunc[elementCount] = null;
+            AttrLayoutFunc[elementCount] = null;
 
             return new Element(this, elementCount++);
         }
@@ -203,34 +181,34 @@ namespace NeoGui.Core
         private void PropagateDisablement()
         {
             for (var i = 1; i < elementCount; ++i) {
-                attrEnabled[i] = attrEnabled[i] && attrEnabled[attrParent[i]];
+                AttrEnabled[i] = AttrEnabled[i] && AttrEnabled[AttrParent[i]];
             }
         }
 
         private void LayoutElements()
         {
             for (var i = 0; i < elementCount; ++i) {
-                attrLayoutFunc[i]?.Invoke(new Element(this, i));
+                AttrLayoutFunc[i]?.Invoke(new Element(this, i));
             }
         }
 
         private void CalcRects()
         {
             // we know parents come before children, so it's OK to just iterate like this and refer back to parents
-            attrAbsRect[0] = attrRect[0];
+            AttrAbsRect[0] = AttrRect[0];
             for (var i = 1; i < elementCount; ++i) {
-                attrAbsRect[i] = attrRect[i];
-                attrAbsRect[i].X += attrAbsRect[attrParent[i]].X;
-                attrAbsRect[i].Y += attrAbsRect[attrParent[i]].Y;
+                AttrAbsRect[i] = AttrRect[i];
+                AttrAbsRect[i].X += AttrAbsRect[AttrParent[i]].X;
+                AttrAbsRect[i].Y += AttrAbsRect[AttrParent[i]].Y;
             }
 
-            attrClipRect[0] = attrAbsRect[0];
+            AttrClipRect[0] = AttrAbsRect[0];
             for (var i = 1; i < elementCount; ++i) {
-                var parentClipRect = attrClipRect[attrParent[i]];
-                if (attrClipContent[i]) {
-                    attrClipRect[i] = parentClipRect.Intersection(attrAbsRect[i]);
+                var parentClipRect = AttrClipRect[AttrParent[i]];
+                if (AttrClipContent[i]) {
+                    AttrClipRect[i] = parentClipRect.Intersection(AttrAbsRect[i]);
                 } else {
-                    attrClipRect[i] = parentClipRect;
+                    AttrClipRect[i] = parentClipRect;
                 }
             }
         }
@@ -244,7 +222,7 @@ namespace NeoGui.Core
             for (var i = 0; i < elementCount; ++i) {
                 bottomToTopIndex.Add(
                     new KeyedValue<Pair<int, int>, int>(
-                        new Pair<int, int>(attrZIndex[i], attrLevel[i]), i));
+                        new Pair<int, int>(AttrZIndex[i], AttrLevel[i]), i));
             }
             bottomToTopIndex.Sort();
         }
@@ -253,7 +231,7 @@ namespace NeoGui.Core
         {
             for (var i = bottomToTopIndex.Count - 1; i >= 0; --i) {
                 var elemIndex = bottomToTopIndex[i].Value;
-                if (attrAbsRect[elemIndex].Contains(absPos)) {
+                if (AttrAbsRect[elemIndex].Contains(absPos)) {
                     return new Element(this, elemIndex);
                 }
             }
@@ -269,9 +247,9 @@ namespace NeoGui.Core
             drawContext.CommandBuffer = DrawCommandBuffer;
             foreach (var entry in bottomToTopIndex) {
                 var elemIndex = entry.Value;
-                if (attrDrawFunc[elemIndex] != null) {
+                if (AttrDrawFunc[elemIndex] != null) {
                     drawContext.Target = new Element(this, elemIndex);
-                    attrDrawFunc[elemIndex](drawContext);
+                    AttrDrawFunc[elemIndex](drawContext);
                 }
             }
         }
@@ -333,11 +311,11 @@ namespace NeoGui.Core
         }
         internal void AddTreeDescentHandler(int elemIndex, Action<Element> handler)
         {
-            treeDescentHandlers.Add(new TraverseEntry<int>(attrLevel[elemIndex], elemIndex, handler));
+            treeDescentHandlers.Add(new TraverseEntry<int>(AttrLevel[elemIndex], elemIndex, handler));
         }
         internal void AddTreeAscentHandler(int elemIndex, Action<Element> handler)
         {
-            treeAscentHandlers.Add(new TraverseEntry<int>(attrLevel[elemIndex], elemIndex, handler));
+            treeAscentHandlers.Add(new TraverseEntry<int>(AttrLevel[elemIndex], elemIndex, handler));
         }
 
         private void ClearTraverseHandlers()
@@ -351,7 +329,7 @@ namespace NeoGui.Core
         {
             for (var i = 0; i < depthDescentHandlers.Count; ++i) { // rewrite now that we can know z-index
                 var elemIndex = depthDescentHandlers[i].ElemIndex;
-                long key = (attrZIndex[elemIndex] << 32) | attrLevel[elemIndex];
+                long key = (AttrZIndex[elemIndex] << 32) | AttrLevel[elemIndex];
                 depthDescentHandlers[i] = new TraverseEntry<long>(key, elemIndex, depthDescentHandlers[i].Handler);
             }
             depthDescentHandlers.Sort();
@@ -361,7 +339,7 @@ namespace NeoGui.Core
 
             for (var i = 0; i < depthAscentHandlers.Count; ++i) { // rewrite now that we can know z-index
                 var elemIndex = depthAscentHandlers[i].ElemIndex;
-                long key = (attrZIndex[elemIndex] << 32) | attrLevel[elemIndex];
+                long key = (AttrZIndex[elemIndex] << 32) | AttrLevel[elemIndex];
                 depthAscentHandlers[i] = new TraverseEntry<long>(key, elemIndex, depthAscentHandlers[i].Handler);
             }
             depthAscentHandlers.Sort();
@@ -403,7 +381,7 @@ namespace NeoGui.Core
             if (elemIndex == 0) {
                 return; // root already has one
             }
-            if (!ReferenceEquals(attrStateHolder[attrParent[elemIndex]], attrStateHolder[elemIndex])) {
+            if (!ReferenceEquals(AttrStateHolder[AttrParent[elemIndex]], AttrStateHolder[elemIndex])) {
                 return; // if we don't have the same as our parent, the we have already gotten one attached
             }
             ValueStorage<StateKeys, ElementId> stateHolder;
@@ -414,7 +392,7 @@ namespace NeoGui.Core
             } else {
                 stateHolder = new ValueStorage<StateKeys, ElementId>();
             }
-            attrStateHolder[elemIndex] = stateHolder;
+            AttrStateHolder[elemIndex] = stateHolder;
             currStateHolders[elemIndex] = stateHolder;
         }
         #endregion
