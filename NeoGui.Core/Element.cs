@@ -18,6 +18,11 @@ namespace NeoGui.Core
             Context = context;
             Index = index;
         }
+
+        public static Element Create(Element parent, object key = null)
+        {
+            return parent.Context.CreateElement(parent, key);
+        }
         
         public ElementId Id => Context.AttrId[Index];
         public object Key => Id.Key;
@@ -27,11 +32,6 @@ namespace NeoGui.Core
         public Element NextSibling => new Element(Context, Context.AttrNextSibling[Index]);
         public bool HasChildren => Context.AttrFirstChild[Index] > 0;
         public bool HasNextSibling => Context.AttrNextSibling[Index] > 0;
-
-        public Element CreateElement(object key = null)
-        {
-            return Context.CreateElement(this, key);
-        }
 
         public void AddEventListener<TEvent>(Action<TEvent> listener, bool capture = false)
             where TEvent : Event
@@ -128,6 +128,11 @@ namespace NeoGui.Core
 
 
         #region Misc forwarded properties
+        public string Name
+        {
+            get { return Context.AttrName[Index]; }
+            set { Context.AttrName[Index] = value; }
+        }
         public bool ClipContent
         {
             get { return Context.AttrClipContent[Index]; }

@@ -52,6 +52,7 @@ namespace NeoGui.Core
 
         private int elementCount;
         private ElementId[] attrId = new ElementId[InitialArraySize];
+        private string[] attrName = new string[InitialArraySize];
         private int[] attrParent = new int[InitialArraySize];
         private int[] attrFirstChild = new int[InitialArraySize];
         private int[] attrNextSibling = new int[InitialArraySize];
@@ -131,6 +132,7 @@ namespace NeoGui.Core
         }
 
         internal ElementId[] AttrId => attrId;
+        internal string[] AttrName => attrName;
         internal int[] AttrParent => attrParent;
         internal int[] AttrFirstChild => attrFirstChild;
         internal int[] AttrNextSibling => attrNextSibling;
@@ -151,6 +153,7 @@ namespace NeoGui.Core
             if (elementCount == attrId.Length) {
                 var newLength = attrId.Length * 2;
                 Array.Resize(ref attrId, newLength);
+                Array.Resize(ref attrName, newLength);
                 Array.Resize(ref attrParent, newLength);
                 Array.Resize(ref attrFirstChild, newLength);
                 Array.Resize(ref attrNextSibling, newLength);
@@ -180,6 +183,7 @@ namespace NeoGui.Core
             }
 
             attrId[elementCount] = new ElementId(key, keyIndex);
+            attrName[elementCount] = "";
             attrParent[elementCount] = parent.Index;
             attrFirstChild[elementCount] = -1; // we have no children yet
             attrNextSibling[elementCount] = attrFirstChild[parent.Index]; // set parent's first child as next sibling

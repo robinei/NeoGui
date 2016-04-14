@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Security.Policy;
 using NeoGui.Core;
 
 namespace NeoGui
@@ -8,29 +9,30 @@ namespace NeoGui
     public struct LabelText { public string Value; }
     public struct LabelColor { public Color Value; }
 
-    public static class LabelExt
+    public static class Label
     {
         private static readonly LabelText DefaultText = new LabelText {Value = ""};
         private static readonly LabelColor DefaultColor = new LabelColor {Value = Color.White};
 
-        public static Element CreateLabel(this Element parent, string text, Color? color = null)
+        public static Element Create(Element parent, string text, Color? color = null)
         {
-            var elem = parent.CreateElement();
+            var label = Element.Create(parent);
             if (text != null) {
-                elem.Set(new LabelText { Value = text });
+                label.Set(new LabelText { Value = text });
             }
             if (color != null) {
-                elem.Set(new LabelColor { Value = color.Value });
+                label.Set(new LabelColor { Value = color.Value });
             }
-            elem.Draw = DrawLabel;
-            return elem;
+            label.Draw = Draw;
+            return label;
         }
 
-        public static void DrawLabel(DrawContext dc)
+        public static void Draw(DrawContext dc)
         {
-            var text = dc.Target.Get(DefaultText).Value;
-            var color = dc.Target.Get(DefaultColor).Value;
-            var size = dc.Target.Size;
+            var label = dc.Target;
+            var text = label.Get(DefaultText).Value;
+            var color = label.Get(DefaultColor).Value;
+            var size = label.Size;
             var textSize = dc.TextSize(text);
             dc.Text((size - textSize) * 0.5f, text, color);
         }
@@ -46,14 +48,14 @@ namespace NeoGui
 
     public struct ButtonCallback { public Action<Element> OnClick; }
 
-    public static class ButtonBehaviorExt
+    public static class ButtonBehavior
     {
-        public static void AddButtonBehavior(this Element elem)
+        public static void Add(Element elem)
         {
             elem.OnDepthDescent(OnDepthDescent);
         }
 
-        public static void OnDepthDescent(Element e)
+        private static void OnDepthDescent(Element e)
         {
             var input = e.Context.Input;
             var state = e.GetOrCreateState<ButtonState>();
@@ -79,33 +81,33 @@ namespace NeoGui
     
     
 
-    public static class TextButtonExt
+    public static class TextButton
     {
-        public static Element CreateTextButton(this Element parent, string text, Action<Element> onClick = null)
+        public static Element Create(Element parent, string text, Action<Element> onClick = null)
         {
-            var elem = parent.CreateLabel(text);
-            elem.AddButtonBehavior();
-            elem.Draw = DrawTextButton;
+            var button = Label.Create(parent, text);
+            ButtonBehavior.Add(button);
+            button.Draw = Draw;
             if (onClick != null) {
-                elem.Set(new ButtonCallback { OnClick = onClick });
+                button.Set(new ButtonCallback { OnClick = onClick });
             }
-            return elem;
+            return button;
         }
 
-        public static void DrawTextButton(DrawContext dc)
+        public static void Draw(DrawContext dc)
         {
-            var elem = dc.Target;
-            var size = elem.Size;
+            var button = dc.Target;
+            var size = button.Size;
             var color = Color.Gray;
-            if (elem.Enabled && elem.IsUnderMouse) {
-                var state = elem.GetState<ButtonState>();
+            if (button.Enabled && button.IsUnderMouse) {
+                var state = button.GetState<ButtonState>();
                 if (state != null) {
                     color = state.MousePressed ? Color.Black : Color.DarkGray;
                 }
             }
             dc.SolidRect(new Rect(size), color);
-            LabelExt.DrawLabel(dc);
-            if (!elem.Enabled) {
+            Label.Draw(dc);
+            if (!button.Enabled) {
                 dc.SolidRect(new Rect(size), new Color(0, 0, 0, 64));
             }
         }
@@ -137,44 +139,64 @@ namespace NeoGui
         public bool MousePressed;
     }
 
-    public static class ScrollAreaExt
+    public static class ScrollArea
     {
-        public static Element CreateScrollArea(this Element parent)
+        public static Element Create(Element parent, object key = null)
         {
-            var elem = parent.CreateElement();
-            elem.ClipContent = true;
-            elem.Layout = LayoutScrollArea;
-            elem.OnDepthDescent(OnDepthDescent);
-            return elem;
+            var scrollArea = Element.Create(parent, key);
+            scrollArea.Name = "ScrollArea";
+            scrollArea.ClipContent = true;
+            scrollArea.Layout = Layout;
+            scrollArea.OnDepthDescent(OnDepthDescent);
+
+            var content = Element.Create(scrollArea);
+            content.Name = "ScrollArea.Content";
+
+            var overlay = Element.Create(scrollArea);
+            overlay.Name = "ScrollArea.Overlay";
+            overlay.Draw = DrawOverlay;
+            overlay.ZIndex = 1;
+
+            return scrollArea;
         }
 
-        public static void LayoutScrollArea(Element e)
+        public static Element GetContentPanel(Element scrollArea)
         {
-            if (!e.HasChildren) {
-                return;
-            }
-            var child = e.FirstChild;
-            Debug.Assert(!child.HasNextSibling);
-            var state = e.GetOrCreateState<ScrollAreaState>();
-            child.Pos = state.Pos;
+            var e = scrollArea.FirstChild.NextSibling;
+            Debug.Assert(e.Name == "ScrollArea.Content");
+            return e;
         }
 
-        public static void OnDepthDescent(Element e)
+        private static Element GetOverlayPanel(Element scrollArea)
         {
-            var input = e.Context.Input;
-            var state = e.GetOrCreateState<ScrollAreaState>();
-            if (!e.Enabled || !e.HasChildren) {
+            var e = scrollArea.FirstChild;
+            Debug.Assert(e.Name == "ScrollArea.Overlay");
+            return e;
+        }
+
+        private static void Layout(Element scrollArea)
+        {
+            var content = GetContentPanel(scrollArea);
+            var overlay = GetOverlayPanel(scrollArea);
+            var state = scrollArea.GetOrCreateState<ScrollAreaState>();
+            content.Pos = state.Pos;
+            overlay.Rect = new Rect(scrollArea.Size);
+        }
+
+        private static void OnDepthDescent(Element scrollArea)
+        {
+            var input = scrollArea.Context.Input;
+            var state = scrollArea.GetOrCreateState<ScrollAreaState>();
+            if (!scrollArea.Enabled) {
                 state.MousePressed = false;
                 return;
             }
             if (state.MousePressed) {
-                var child = e.FirstChild;
-                Debug.Assert(!child.HasNextSibling);
+                var pos = state.OrigPos + (scrollArea.ToLocalCoord(input.MousePos) - state.MouseOrigin);
                 
-                var pos = state.OrigPos + (e.ToLocalCoord(input.MousePos) - state.MouseOrigin);
-
-                if (pos.X + child.Width < e.Width) { pos.X = e.Width - child.Width; }
-                if (pos.Y + child.Height < e.Height) { pos.Y = e.Height - child.Height; }
+                var content = GetContentPanel(scrollArea);
+                if (pos.X + content.Width < scrollArea.Width) { pos.X = scrollArea.Width - content.Width; }
+                if (pos.Y + content.Height < scrollArea.Height) { pos.Y = scrollArea.Height - content.Height; }
                 if (pos.X > 0) { pos.X = 0; }
                 if (pos.Y > 0) { pos.Y = 0; }
 
@@ -183,11 +205,30 @@ namespace NeoGui
                 if (input.WasMouseButtonReleased(MouseButton.Left)) {
                     state.MousePressed = false;
                 }
-            } else if (input.WasMouseButtonPressed(MouseButton.Left) && e.IsUnderMouse) {
+            } else if (input.WasMouseButtonPressed(MouseButton.Left) && scrollArea.IsUnderMouse) {
                 state.MousePressed = true;
-                state.MouseOrigin = e.ToLocalCoord(input.MousePos);
+                state.MouseOrigin = scrollArea.ToLocalCoord(input.MousePos);
                 state.OrigPos = state.Pos;
                 input.ConsumeMouseButtonPressed(MouseButton.Left);
+            }
+        }
+
+        private static void DrawOverlay(DrawContext dc)
+        {
+            var overlay = dc.Target;
+            var scrollArea = overlay.Parent;
+            var content = GetContentPanel(scrollArea);
+
+            if (content.Width > scrollArea.Width) {
+                var length = scrollArea.Width * scrollArea.Width / content.Width;
+                var offset = (scrollArea.Width - length) * -content.X / (content.Width - scrollArea.Width);
+                dc.SolidRect(new Rect(offset, scrollArea.Height - 5, length, 5), new Color(0, 0, 0, 64));
+            }
+            
+            if (content.Height > scrollArea.Height) {
+                var length = scrollArea.Height * scrollArea.Height / content.Height;
+                var offset = (scrollArea.Height - length) * -content.Y / (content.Height - scrollArea.Height);
+                dc.SolidRect(new Rect(scrollArea.Width - 5, offset, 5, length), new Color(0, 0, 0, 64));
             }
         }
     }
@@ -218,13 +259,13 @@ namespace NeoGui
             root.Rect = new Rect(0, 0, windowWidth, windowHeight);
             root.Draw = DrawFuncs.DrawBackgroundColor;
 
-            var toggleButton = root.CreateTextButton("Toggle", e => {
+            var toggleButton = TextButton.Create(root, "Toggle", e => {
                 panelVisible = !panelVisible;
             });
             toggleButton.Rect = new Rect(70, 40, 100, 30);
 
             if (panelVisible) {
-                var panel = root.CreateElement();
+                var panel = Element.Create(root);
                 panel.AttachStateHolder();
                 panel.Rect = new Rect(70, 80, 300, 600);
                 panel.ClipContent = true;
@@ -233,62 +274,60 @@ namespace NeoGui
                 
                 var state = panel.GetOrCreateState<TestState>();
 
-                var tabButton0 = panel.CreateTextButton("Tab 0", e => {
+                var tabButton0 = TextButton.Create(panel, "Tab 0", e => {
                     e.FindState<TestState>().ActiveTab = 0;
                 });
                 tabButton0.Enabled = state.ActiveTab != 0;
                 tabButton0.Rect = new Rect(0, 0, 100, 30);
 
-                var tabButton1 = panel.CreateTextButton("Tab 1", e => {
+                var tabButton1 = TextButton.Create(panel, "Tab 1", e => {
                     e.FindState<TestState>().ActiveTab = 1;
                 });
                 tabButton1.Enabled = state.ActiveTab != 1;
                 tabButton1.Rect = new Rect(101, 0, 100, 30);
                 
                 if (state.ActiveTab == 0) {
-                    var tab0 = panel.CreateElement();
+                    var tab0 = Element.Create(panel);
                     tab0.Rect = new Rect(0, 30, 300, 550);
 
-                    var titleLabel = tab0.CreateLabel("This is tab 0", Color.Black);
+                    var titleLabel = Label.Create(tab0, "This is tab 0", Color.Black);
                     titleLabel.Rect = new Rect(10, 10, 100, 30);
 
-                    var addButton = tab0.CreateTextButton("Add", e => {
+                    var addButton = TextButton.Create(tab0, "Add", e => {
                         e.FindState<TestState>().NumButtons++;
                     });
                     addButton.Rect = new Rect(150, 10, 100, 30);
 
                     for (var i = 0; i < state.NumButtons; ++i) {
-                        var button = tab0.CreateTextButton("Ok", e => {
+                        var button = TextButton.Create(tab0, "Ok", e => {
                             var s = e.GetOrCreateState<TestCount>();
                             s.StringValue = $"count: {++s.Value}";
                         });
                         button.Rect = new Rect(10, 50 + i * 40, 100 + (float)Math.Sin(ui.Input.Time * 3 + i * 0.1f) * 30, 30);
 
                         var countString = button.GetOrCreateState<TestCount>().StringValue;
-                        var countLabel = tab0.CreateLabel(countString, Color.Black);
+                        var countLabel = Label.Create(tab0, countString, Color.Black);
                         countLabel.Rect = new Rect(170, 50 + i * 40, 100, 30);
                     }
                 } else {
-                    var tab1 = panel.CreateElement();
+                    var tab1 = Element.Create(panel);
                     tab1.Rect = new Rect(0, 30, 300, 550);
 
-                    var titleLabel = tab1.CreateLabel("This is tab 1", Color.Black);
+                    var titleLabel = Label.Create(tab1, "This is tab 1", Color.Black);
                     titleLabel.Rect = new Rect(10, 10, 100, 30);
                     
-                    var scrollArea = tab1.CreateScrollArea();
+                    var scrollArea = ScrollArea.Create(tab1);
                     scrollArea.Rect = new Rect(10, 50, 200, 200);
-                    scrollArea.Set(new BackgroundColor { Value = Color.Red });
-                    scrollArea.Draw = DrawFuncs.DrawBackgroundColor;
 
-                    var contentPanel = scrollArea.CreateElement();
-                    contentPanel.Rect = new Rect(0, 0, 250, 250);
+                    var contentPanel = ScrollArea.GetContentPanel(scrollArea);
+                    contentPanel.Size = new Vec2(250, 250);
                     contentPanel.Set(new BackgroundColor { Value = new Color(220, 220, 220) });
                     contentPanel.Draw = DrawFuncs.DrawBackgroundColor;
 
-                    var label = contentPanel.CreateLabel("Drag me", Color.Black);
+                    var label = Label.Create(contentPanel, "Drag me", Color.Black);
                     label.Rect = new Rect(10, 10, 100, 30);
 
-                    var button = contentPanel.CreateTextButton("Hello", e => Debug.WriteLine("Hello"));
+                    var button = TextButton.Create(contentPanel, "Hello", e => Debug.WriteLine("Hello"));
                     button.Rect = new Rect(10, 50, 100, 30);
                 }
             }
