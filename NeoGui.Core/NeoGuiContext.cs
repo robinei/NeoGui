@@ -249,12 +249,20 @@ namespace NeoGui.Core
         }
         
 
-        public readonly List<DrawCommand>  DrawCommandBuffer = new List<DrawCommand>();
+        private DrawCommandBuffer currDrawCommandBuffer = new DrawCommandBuffer();
+        private DrawCommandBuffer prevDrawCommandBuffer = new DrawCommandBuffer();
+        
+        public readonly List<DrawCommandBuffer> DirtyDrawCommandBuffers = new List<DrawCommandBuffer>();
+
         private readonly DrawContext drawContext = new DrawContext();
         private void DrawElements()
         {
-            DrawCommandBuffer.Clear();
-            drawContext.CommandBuffer = DrawCommandBuffer;
+            var temp = currDrawCommandBuffer;
+            currDrawCommandBuffer = prevDrawCommandBuffer;
+            prevDrawCommandBuffer = temp;
+
+            currDrawCommandBuffer.Clear();
+            drawContext.CommandBuffer = currDrawCommandBuffer;
             foreach (var entry in bottomToTopIndex) {
                 var elemIndex = entry.Value;
                 if (AttrDrawFunc[elemIndex] != null) {
@@ -262,8 +270,14 @@ namespace NeoGui.Core
                     AttrDrawFunc[elemIndex](drawContext);
                 }
             }
+
+            DirtyDrawCommandBuffers.Clear();
+            if (!currDrawCommandBuffer.HasEqualCommands(prevDrawCommandBuffer)) {
+                DirtyDrawCommandBuffers.Add(currDrawCommandBuffer);
+            }
         }
-        
+
+
         
         private int stringIdCounter;
         private readonly Dictionary<string, int> stringToId = new Dictionary<string, int>();

@@ -38,6 +38,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Color.cs" />
+    <Compile Include="DrawCommandBuffer.cs" />
     <Compile Include="InputContext.cs" />
     <Compile Include="NeoGuiContext.cs" />
     <Compile Include="DrawContext.cs" />

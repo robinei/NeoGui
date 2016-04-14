@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -12,6 +13,7 @@ namespace NeoGui
     {
         private readonly GraphicsDeviceManager graphics;
         private readonly RasterizerState rasterizerState = new RasterizerState {ScissorTestEnable = true};
+        private RenderTarget2D renderTarget;
         private SpriteBatch spriteBatch;
         private SpriteFont font;
         private Texture2D pixel;
@@ -39,11 +41,22 @@ namespace NeoGui
             graphics.SynchronizeWithVerticalRetrace = false;
             IsFixedTimeStep = false;
             Content.RootDirectory = "Content";
+
+            Debug.WriteLine("DrawCommand size: " + Marshal.SizeOf(typeof(DrawCommand)));
         }
         
         protected override void Initialize()
         {
             base.Initialize();
+            renderTarget = new RenderTarget2D(
+                GraphicsDevice,
+                GraphicsDevice.PresentationParameters.BackBufferWidth,
+                GraphicsDevice.PresentationParameters.BackBufferHeight,
+                false,
+                GraphicsDevice.PresentationParameters.BackBufferFormat,
+                DepthFormat.Depth24,
+                1,
+                RenderTargetUsage.PreserveContents);
             IsMouseVisible = true;
         }
         
@@ -64,6 +77,8 @@ namespace NeoGui
         
         protected override void Update(GameTime gameTime)
         {
+            ++frameCounter;
+
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == Microsoft.Xna.Framework.Input.ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape)) {
                 Exit();
             }
@@ -98,41 +113,57 @@ namespace NeoGui
             input.MouseButtonDown[(int)MouseButton.Middle] = mouseState.MiddleButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
             ui.SetCurrentInputState(input);
         }
-        
-        protected override void Draw(GameTime gameTime)
-        {
-            ++frameCounter;
-            GraphicsDevice.Clear(Color.CornflowerBlue);
-            spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, null, null, rasterizerState);
 
-            var prevClipRect = Rect.Empty;
-            foreach (var command in ui.DrawCommandBuffer) {
-                var clipRect = command.ClipRect;
-                if ((clipRect.Pos - prevClipRect.Pos).SqrLength > 0 || (clipRect.Size - prevClipRect.Size).SqrLength > 0) {
-                    spriteBatch.GraphicsDevice.ScissorRectangle = clipRect.ToMonoGameRectangle();
-                }
-                switch (command.Type) {
-                case DrawCommandType.SolidRect:
-                    spriteBatch.Draw(pixel, command.SolidRect.Rect.ToMonoGameRectangle(), command.SolidRect.Color.ToMonoGameColor());
-                    break;
-                case DrawCommandType.GradientRect:
-                    break;
-                case DrawCommandType.TexturedRect:
-                    break;
-                case DrawCommandType.Text:
-                    spriteBatch.DrawString(font, ui.GetInternedString(command.Text.StringId), command.Text.Vec2.ToMonoGameVector2(), command.Text.Color.ToMonoGameColor());
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
+        protected override bool BeginDraw()
+        {
+            return ui.DirtyDrawCommandBuffers.Count > 0;
+        }
+
+        private void DrawUi()
+        {
+            GraphicsDevice.SetRenderTarget(renderTarget);
+ 
+            spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, null, null, rasterizerState);
+            foreach (var buffer in ui.DirtyDrawCommandBuffers) {
+                var prevClipRect = Rect.Empty;
+                for (var i = 0; i < buffer.Count; ++i) {
+                    var command = buffer[i];
+                    var clipRect = command.ClipRect;
+                    if ((clipRect.Pos - prevClipRect.Pos).SqrLength > 0 || (clipRect.Size - prevClipRect.Size).SqrLength > 0) {
+                        GraphicsDevice.ScissorRectangle = clipRect.ToMonoGameRectangle();
+                    }
+                    switch (command.Type) {
+                    case DrawCommandType.SolidRect:
+                        spriteBatch.Draw(pixel, command.SolidRect.Rect.ToMonoGameRectangle(), command.SolidRect.Color.ToMonoGameColor());
+                        break;
+                    case DrawCommandType.GradientRect:
+                        break;
+                    case DrawCommandType.TexturedRect:
+                        break;
+                    case DrawCommandType.Text:
+                        spriteBatch.DrawString(font, ui.GetInternedString(command.Text.StringId), command.Text.Vec2.ToMonoGameVector2(), command.Text.Color.ToMonoGameColor());
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                    }
                 }
             }
+            spriteBatch.End();
+            GraphicsDevice.ScissorRectangle = GraphicsDevice.Viewport.Bounds;
+ 
+            GraphicsDevice.SetRenderTarget(null);
+        }
+
+        protected override void Draw(GameTime gameTime)
+        {
+            DrawUi();
             
-            spriteBatch.GraphicsDevice.ScissorRectangle = GraphicsDevice.Viewport.Bounds;
+            spriteBatch.Begin();
+            spriteBatch.Draw(renderTarget, GraphicsDevice.Viewport.Bounds, Color.White);
             var memMegaBytes = GC.GetTotalMemory(false) / (1024.0 * 1024.0);
             string fps = $"fps: {frameRate}  mem: {memMegaBytes:F1} MB";
             spriteBatch.DrawString(font, fps, new Vector2(5, 1), Color.White);
             spriteBatch.DrawString(font, fps, new Vector2(4, 0), Color.Black);
-
             spriteBatch.End();
             base.Draw(gameTime);
         }
