@@ -48,7 +48,7 @@ namespace NeoGui.Core
 
         public bool Contains(Vec2 p)
         {
-            return p.X >= X && p.Y >= Y && p.X < X + Width && p.Y < Y + Height;
+            return !(p.X < X || p.Y < Y || p.X > X + Width || p.Y > Y + Height);
         }
 
         public Rect Intersection(Rect r)
