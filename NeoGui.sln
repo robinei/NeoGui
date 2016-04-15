@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NeoGui", "NeoGui\NeoGui.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NeoGui.Core", "NeoGui.Core\NeoGui.Core.csproj", "{D578428D-7774-4C84-B44E-92CFD2C109E6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NeoGui.Toolkit", "NeoGui.Toolkit\NeoGui.Toolkit.csproj", "{1404E05D-C41E-4691-81B8-50BA8FD21018}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -29,6 +31,14 @@ Global
 		{D578428D-7774-4C84-B44E-92CFD2C109E6}.Release|Any CPU.Build.0 = Release|Any CPU
 		{D578428D-7774-4C84-B44E-92CFD2C109E6}.Release|x86.ActiveCfg = Release|Any CPU
 		{D578428D-7774-4C84-B44E-92CFD2C109E6}.Release|x86.Build.0 = Release|Any CPU
+		{1404E05D-C41E-4691-81B8-50BA8FD21018}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1404E05D-C41E-4691-81B8-50BA8FD21018}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1404E05D-C41E-4691-81B8-50BA8FD21018}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1404E05D-C41E-4691-81B8-50BA8FD21018}.Debug|x86.Build.0 = Debug|Any CPU
+		{1404E05D-C41E-4691-81B8-50BA8FD21018}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1404E05D-C41E-4691-81B8-50BA8FD21018}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1404E05D-C41E-4691-81B8-50BA8FD21018}.Release|x86.ActiveCfg = Release|Any CPU
+		{1404E05D-C41E-4691-81B8-50BA8FD21018}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
