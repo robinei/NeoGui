@@ -6,21 +6,37 @@ namespace NeoGui.Toolkit
 {
     public class ScrollAreaState
     {
+        public ScrollAreaFlags Flags;
+
         public Vec2 Overflow;
         public Vec2 Pos;
         public Vec2 OrigPos;
         public bool IsDragging;
+
+        public Vec2 ClientSize; // not used here, but useful in VirtualList for example
+    }
+
+    [Flags]
+    public enum ScrollAreaFlags
+    {
+        OverDragX = 1,
+        OverDragY = 2
     }
 
     public static class ScrollArea
     {
-        public static Element Create(Element parent, object key = null)
+        public static Element Create(
+            Element parent, 
+            ScrollAreaFlags flags = ScrollAreaFlags.OverDragX | ScrollAreaFlags.OverDragY,
+            object key = null)
         {
             var scrollArea = Element.Create(parent, key);
             scrollArea.Name = "ScrollArea";
             scrollArea.ClipContent = true;
             scrollArea.Layout = Layout;
             scrollArea.OnDepthDescent(OnDepthDescent);
+            var state = scrollArea.GetOrCreateState<ScrollAreaState>();
+            state.Flags = flags;
 
             var content = Element.Create(scrollArea);
             content.Name = "ScrollArea.Content";
@@ -47,7 +63,7 @@ namespace NeoGui.Toolkit
             return e;
         }
 
-        private static void Layout(Element scrollArea)
+        public static void Layout(Element scrollArea)
         {
             var content = GetContentPanel(scrollArea);
             var overlay = GetOverlayPanel(scrollArea);
@@ -59,6 +75,7 @@ namespace NeoGui.Toolkit
         private static void OnDepthDescent(Element scrollArea)
         {
             var state = scrollArea.GetOrCreateState<ScrollAreaState>();
+            state.ClientSize = scrollArea.Size;
             if (!scrollArea.Enabled) {
                 state.IsDragging = false;
                 return;
@@ -107,6 +124,12 @@ namespace NeoGui.Toolkit
             var scale = scrollArea.ToLocalScale(1.0f);
             var vec = (input.DragRemainder * scale) * (1.0f / input.DragRemainderUses);
             state.Overflow = vec * (1.0f / (float)Math.Max(Math.Sqrt(vec.Length), 1.0));
+            if ((state.Flags & ScrollAreaFlags.OverDragX) == 0) {
+                state.Overflow.X = 0;
+            }
+            if ((state.Flags & ScrollAreaFlags.OverDragY) == 0) {
+                state.Overflow.Y = 0;
+            }
         }
 
         private static void DrawOverlay(DrawContext dc)

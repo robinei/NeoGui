@@ -23,6 +23,9 @@ namespace NeoGui
 
         private static bool switchValue;
 
+        private static readonly object PanelKey = new object();
+        private static readonly object ListKey = new object();
+
         public static void DoUi(NeoGuiContext ui, float windowWidth, float windowHeight)
         {
             ui.BeginFrame();
@@ -37,9 +40,9 @@ namespace NeoGui
             toggleButton.Rect = new Rect(70, 40, 100, 30);
 
             if (panelVisible) {
-                var panel = Panel.Create(root, Color.LightGray);
+                var panel = Panel.Create(root, Color.LightGray, PanelKey);
                 panel.AttachStateHolder();
-                panel.Rect = new Rect(70, 80, 500, 600);
+                panel.Rect = new Rect(70, 80, 400, 600);
                 panel.ClipContent = true;
                 
                 var state = panel.GetOrCreateState<TestState>();
@@ -116,6 +119,12 @@ namespace NeoGui
                     toggle.Pos = new Vec2(100, 102);
                 }
             }
+
+            var virtualList = VirtualList.Create(root, 10000, 40.0f, (parent, index) => {
+                var label = Label.Create(parent, "Row " + index, Color.Black);
+                return label;
+            }, ListKey);
+            virtualList.Rect = new Rect(550, 80, 100, 600);
 
             ui.EndFrame();
         }
