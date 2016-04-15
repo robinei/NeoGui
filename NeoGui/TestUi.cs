@@ -21,6 +21,8 @@ namespace NeoGui
 
         private static bool panelVisible = true;
 
+        private static bool switchValue;
+
         public static void DoUi(NeoGuiContext ui, float windowWidth, float windowHeight)
         {
             ui.BeginFrame();
@@ -107,6 +109,11 @@ namespace NeoGui
 
                     var button = TextButton.Create(contentPanel, "Hello", e => Debug.WriteLine("Hello"));
                     button.Rect = new Rect(10, 50, 100, 30);
+                    
+                    var toggleLabel = Label.Create(contentPanel, "Switch me:", Color.Black);
+                    toggleLabel.Rect = new Rect(10, 100, 70, 20);
+                    var toggle = ToggleSwitch.Create(contentPanel, switchValue, e => switchValue = !switchValue);
+                    toggle.Pos = new Vec2(100, 102);
                 }
             }
 
