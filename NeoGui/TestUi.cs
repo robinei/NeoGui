@@ -199,9 +199,9 @@ namespace NeoGui
                     return;
                 }
                 
-                // apply the whole DragVector
+                // apply the whole DragRemainder
                 var scale = scrollArea.ToLocalScale(1.0f);
-                var pos = state.OrigPos + input.DragVector * scale;
+                var pos = state.OrigPos + input.DragRemainder * scale;
                 
                 // move pos back if we went out of bounds
                 if (pos.X + content.Width < scrollArea.Width) { pos.X = scrollArea.Width - content.Width; }
@@ -209,14 +209,14 @@ namespace NeoGui
                 if (pos.X > 0) { pos.X = 0; }
                 if (pos.Y > 0) { pos.Y = 0; }
 
-                // subtract the part of the DragVector that we "used".
+                // subtract the part of the DragRemainder that we "used".
                 // what's left can be "used" by someone further up the hierarchy
-                input.DragVector -= (pos - state.OrigPos) * (1.0f / scale);
-                ++input.DragUserCount;
+                input.DragRemainder -= (pos - state.OrigPos) * (1.0f / scale);
+                ++input.DragRemainderUses;
 
                 state.Pos = pos;
 
-                scrollArea.Context.RunAfterPass(scrollArea, HandleDragOverflow);
+                scrollArea.OnPassFinished(HandleDragOverflow);
             } else if (input.IsDragging &&
                        scrollArea.AbsoluteRect.Contains(input.TrueDragOrigin) &&
                        scrollArea.ClipRect.Contains(input.TrueDragOrigin)) {
@@ -235,7 +235,7 @@ namespace NeoGui
             var input = scrollArea.Context.Input;
             var state = scrollArea.GetOrCreateState<ScrollAreaState>();
             var scale = scrollArea.ToLocalScale(1.0f);
-            var vec = (input.DragVector * scale) * (1.0f / input.DragUserCount);
+            var vec = (input.DragRemainder * scale) * (1.0f / input.DragRemainderUses);
             state.Overflow = vec * (1.0f / (float)Math.Sqrt(vec.Length));
         }
 
@@ -345,7 +345,7 @@ namespace NeoGui
                     
                     var outerScrollArea = ScrollArea.Create(tab1);
                     outerScrollArea.Rect = new Rect(10, 40, 300, 300);
-                    outerScrollArea.Set(Color.Red);
+                    outerScrollArea.Set(new BackgroundColor { Value = Color.LightGray });
                     outerScrollArea.Draw = DrawFuncs.DrawBackgroundColor;
 
                     var outerContentPanel = ScrollArea.GetContentPanel(outerScrollArea);
@@ -356,7 +356,7 @@ namespace NeoGui
 
                     var scrollArea = ScrollArea.Create(outerContentPanel);
                     scrollArea.Rect = new Rect(50, 50, 200, 200);
-                    scrollArea.Set(Color.Red);
+                    scrollArea.Set(new BackgroundColor { Value = new Color(240, 240, 240) });
                     scrollArea.Draw = DrawFuncs.DrawBackgroundColor;
 
                     var contentPanel = ScrollArea.GetContentPanel(scrollArea);

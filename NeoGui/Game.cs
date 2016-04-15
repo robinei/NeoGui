@@ -111,7 +111,7 @@ namespace NeoGui
             input.MouseButtonDown[(int)MouseButton.Left] = mouseState.LeftButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
             input.MouseButtonDown[(int)MouseButton.Right] = mouseState.RightButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
             input.MouseButtonDown[(int)MouseButton.Middle] = mouseState.MiddleButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
-            ui.SetCurrentInputState(input);
+            ui.Input.SetNewState(input);
         }
 
         protected override bool BeginDraw()

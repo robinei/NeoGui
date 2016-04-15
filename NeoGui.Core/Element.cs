@@ -42,6 +42,8 @@ namespace NeoGui.Core
         public void OnTreeDescent(Action<Element> handler) { Context.AddTreeDescentHandler(Index, handler); }
         public void OnTreeAscent(Action<Element> handler) { Context.AddTreeAscentHandler(Index, handler); }
         
+        public void OnPassFinished(Action<Element> handler) { Context.RunAfterPass(this, handler); }
+
 
         public bool Has<TComponent>()
         {

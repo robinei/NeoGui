@@ -14,65 +14,103 @@ namespace NeoGui.Core
         public double Time;
         public Vec2 MousePos;
         public readonly bool[] MouseButtonDown = new bool[3];
+
+        public void CopyFrom(InputState state)
+        {
+            Time = state.Time;
+            MousePos = state.MousePos;
+            for (var i = 0; i < 3; ++i) {
+                MouseButtonDown[i] = state.MouseButtonDown[i];
+            }
+        }
     }
 
     public class InputContext
     {
         private readonly NeoGuiContext context;
-        private readonly InputTracker tracker;
-        private InputContext prevInput;
 
-        private readonly bool[] mouseButtonDown = new bool[3];
+        private InputState curr = new InputState();
+        private InputState prev = new InputState();
+        private bool hasSetStateBefore;
+
         private readonly bool[] mouseButtonPressConsumed = new bool[3];
-        private readonly bool[] mouseButtonReleaseConsumed = new bool[3];
+        private bool dragPending;
 
         
-        public double Time { get; private set; }
-        public Vec2 MousePos { get; private set; }
-
-        internal InputContext(NeoGuiContext context, InputTracker tracker)
+        internal InputContext(NeoGuiContext context)
         {
             this.context = context;
-            this.tracker = tracker;
         }
 
-        internal void SetRawState(InputContext prev, InputState inputState)
+        public void SetNewState(InputState newState)
         {
-            prevInput = prev;
-            Time = inputState.Time;
-            MousePos = inputState.MousePos;
+            var temp = curr;
+            curr = prev;
+            prev = temp;
+
+            curr.CopyFrom(newState);
+            if (!hasSetStateBefore) {
+                prev.CopyFrom(newState);
+                hasSetStateBefore = true;
+            }
+        }
+        
+
+        public double Time => curr.Time;
+        public double TimeDelta => Time - prev.Time;
+
+        public Vec2 MousePos => curr.MousePos;
+        public Vec2 MouseDelta => MousePos - prev.MousePos;
+        public bool DidMouseMove => MouseDelta.SqrLength > 0;
+        
+        
+        public bool IsDragging { get; private set; }
+        public Vec2 DragOrigin { get; private set; }
+        public Vec2 TrueDragOrigin { get; private set; }
+        public Vec2 DragPos => MousePos;
+        public Vec2 DragRemainder { get; set; }
+        public int DragRemainderUses { get; set; }
+        
+
+        public void PreUiUpdate()
+        {
+            DragRemainder = IsDragging ? DragPos - DragOrigin : Vec2.Zero;
+            DragRemainderUses = 0;
+            
             for (var i = 0; i < 3; ++i) {
-                mouseButtonDown[i] = inputState.MouseButtonDown[i];
                 mouseButtonPressConsumed[i] = false;
-                mouseButtonReleaseConsumed[i] = false;
             }
         }
 
-        public double TimeDelta => Time - prevInput.Time;
-        public Vec2 MouseDelta => MousePos - prevInput.MousePos;
-        public bool DidMouseMove => MouseDelta.SqrLength > 0;
-
-        public bool IsDragging => tracker.IsDragging;
-        public Vec2 DragOrigin => tracker.DragOrigin;
-        public Vec2 TrueDragOrigin => tracker.TrueDragOrigin;
-        public Vec2 DragPos => tracker.DragPos;
-        public Vec2 DragVector
+        public void PostUiUpdate()
         {
-            get { return tracker.DragVector; }
-            set { tracker.DragVector = value; }
-        }
-        public int DragUserCount
-        {
-            get { return tracker.DragUserCount; }
-            set { tracker.DragUserCount = value; }
+            if (WasMouseButtonPressed(MouseButton.Left)) {
+                // it was pressed this frame, and no-one consumed it
+                dragPending = true;
+                TrueDragOrigin = MousePos;
+            }
+
+            if (WasMouseButtonReleased(MouseButton.Left)) {
+                dragPending = false;
+                IsDragging = false;
+                TrueDragOrigin = Vec2.Zero;
+                DragOrigin = Vec2.Zero;
+            }
+
+            if (dragPending && (MousePos - TrueDragOrigin).Length > 5) {
+                dragPending = false;
+                IsDragging = true;
+                DragOrigin = MousePos;
+            }
         }
 
-        public bool IsMouseButtonDown(MouseButton button) => mouseButtonDown[(int)button];
+
+        public bool IsMouseButtonDown(MouseButton button) => curr.MouseButtonDown[(int)button];
 
         public bool WasMouseButtonPressed(MouseButton button, bool respectIfConsumed = true)
         {
-            return IsMouseButtonDown(button) &&
-                   !prevInput.IsMouseButtonDown(button) &&
+            return curr.MouseButtonDown[(int)button] &&
+                   !prev.MouseButtonDown[(int)button] &&
                    (!respectIfConsumed || !mouseButtonPressConsumed[(int)button]);
         }
         public void ConsumeMouseButtonPressed(MouseButton button)
@@ -80,68 +118,9 @@ namespace NeoGui.Core
             mouseButtonPressConsumed[(int)button] = true;
         }
 
-        public bool WasMouseButtonReleased(MouseButton button, bool respectIfConsumed = true)
+        public bool WasMouseButtonReleased(MouseButton button)
         {
-            return !IsMouseButtonDown(button) &&
-                   prevInput.IsMouseButtonDown(button) &&
-                   (!respectIfConsumed || !mouseButtonReleaseConsumed[(int)button]);
+            return prev.MouseButtonDown[(int)button] && !curr.MouseButtonDown[(int)button];
         }
-        public void ConsumeMouseButtonReleased(MouseButton button)
-        {
-            mouseButtonReleaseConsumed[(int)button] = true;
-        }
-    }
-
-
-    internal class InputTracker
-    {
-        private readonly NeoGuiContext context;
-
-        private bool dragPending;
-
-        public InputContext Input { get; set; }
-
-        public InputTracker(NeoGuiContext context)
-        {
-            this.context = context;
-        }
-
-        public void PreUiUpdate()
-        {
-            Debug.Assert(Input != null);
-            
-            if (Input.WasMouseButtonReleased(MouseButton.Left)) {
-                dragPending = false;
-                IsDragging = false;
-                TrueDragOrigin = Vec2.Zero;
-                DragOrigin = Vec2.Zero;
-            }
-
-            if (dragPending && (Input.MousePos - TrueDragOrigin).Length > 5) {
-                dragPending = false;
-                IsDragging = true;
-                DragOrigin = Input.MousePos;
-            }
-
-            DragVector = IsDragging ? DragPos - DragOrigin : Vec2.Zero;
-            DragUserCount = 0;
-        }
-
-        public void PostUiUpdate()
-        {
-            Debug.Assert(Input != null);
-            if (Input.WasMouseButtonPressed(MouseButton.Left)) {
-                // it was pressed this frame, and no-one consumed it
-                dragPending = true;
-                TrueDragOrigin = Input.MousePos;
-            }
-        }
-
-        public bool IsDragging { get; private set; }
-        public Vec2 DragOrigin { get; private set; }
-        public Vec2 TrueDragOrigin { get; private set; }
-        public Vec2 DragPos => Input.MousePos;
-        public Vec2 DragVector { get; set; }
-        public int DragUserCount { get; set; }
     }
 }

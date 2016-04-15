@@ -41,8 +41,6 @@ namespace NeoGui.Core
 
         private const int InitialArraySize = 128;
 
-        public readonly INeoGuiDelegate Delegate;
-
         private readonly object rootKey = new object();
         private readonly List<int> keyCounters = new List<int>();
         private readonly ValueStorage<StateKeys, ElementId> rootStateHolder = new ValueStorage<StateKeys, ElementId>();
@@ -70,38 +68,15 @@ namespace NeoGui.Core
         internal readonly ValueStorage<DataKeys, int> DataStorage = new ValueStorage<DataKeys, int>();
         
         internal readonly Dictionary<ElementId, int> IdToIndexMap = new Dictionary<ElementId, int>();
-
         
-        private bool hasSetInputStateOnce;
-        private readonly InputTracker inputTracker;
-        private InputContext prevInput;
-        private InputContext currInput;
-        public InputContext Input => currInput;
-        public void SetCurrentInputState(InputState input)
-        {
-            RotateInputsAndSetRawState(input);
-            if (!hasSetInputStateOnce) {
-                // set it twice the first time, so the two are equal, meaning no edge triggers
-                RotateInputsAndSetRawState(input);
-                hasSetInputStateOnce = true;
-            }
-        }
-        private void RotateInputsAndSetRawState(InputState input)
-        {
-            var temp = prevInput;
-            prevInput = currInput;
-            currInput = temp;
-            currInput.SetRawState(prevInput, input);
-            inputTracker.Input = currInput;
-        }
 
-
+        public readonly INeoGuiDelegate Delegate;
+        public readonly InputContext Input;
+        
         public NeoGuiContext(INeoGuiDelegate del)
         {
             Delegate = del;
-            inputTracker = new InputTracker(this);
-            prevInput = new InputContext(this, inputTracker);
-            currInput = new InputContext(this, inputTracker);
+            Input = new InputContext(this);
         }
 
         public void BeginFrame()
@@ -351,7 +326,7 @@ namespace NeoGui.Core
         }
         public void RunUpdateTraversals()
         {
-            inputTracker.PreUiUpdate();
+            Input.PreUiUpdate();
 
             for (var i = 0; i < depthDescentHandlers.Count; ++i) { // rewrite now that we can know z-index
                 var elemIndex = depthDescentHandlers[i].ElemIndex;
@@ -391,13 +366,13 @@ namespace NeoGui.Core
             }
             RunPostPassHandlers();
 
-            inputTracker.PostUiUpdate();
+            Input.PostUiUpdate();
         }
 
         private readonly List<KeyedValue<int, Action<Element>>> postPassHandlers = new List<KeyedValue<int, Action<Element>>>();
-        public void RunAfterPass(Element e, Action<Element> action)
+        internal void RunAfterPass(Element e, Action<Element> handler)
         {
-            postPassHandlers.Add(new KeyedValue<int, Action<Element>>(e.Index, action));
+            postPassHandlers.Add(new KeyedValue<int, Action<Element>>(e.Index, handler));
         }
         private void RunPostPassHandlers()
         {
