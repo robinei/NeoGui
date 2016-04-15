@@ -257,6 +257,7 @@ namespace NeoGui.Core
         private int stringIdCounter;
         private readonly Dictionary<string, int> stringToId = new Dictionary<string, int>();
         private readonly Dictionary<int, string> idToString = new Dictionary<int, string>();
+
         internal int InternString(string str)
         {
             int id;
@@ -273,6 +274,32 @@ namespace NeoGui.Core
             string str;
             return idToString.TryGetValue(id, out str) ? str : "";
         }
+
+        private readonly Dictionary<long, Vec2> textSizeCache = new Dictionary<long, Vec2>();
+
+        internal Vec2 GetTextSize(string text, int fontId)
+        {
+            if (string.IsNullOrEmpty(text)) {
+                return Vec2.Zero;
+            }
+            var stringId = InternString(text);
+            var key = TwoIntsToLong(fontId, stringId);
+            Vec2 size;
+            if (textSizeCache.TryGetValue(key, out size)) {
+                return size;
+            }
+            size = Delegate.TextSize(text, fontId);
+            textSizeCache[key] = size;
+            return size;
+        }
+
+        private static long TwoIntsToLong(int a, int b)
+        {
+            unchecked {
+                return ((long)a << 32) | (uint)b;
+            }
+        }
+
 
 
         #region Ascent/descent traversal
@@ -330,7 +357,7 @@ namespace NeoGui.Core
 
             for (var i = 0; i < depthDescentHandlers.Count; ++i) { // rewrite now that we can know z-index
                 var elemIndex = depthDescentHandlers[i].ElemIndex;
-                long key = (AttrZIndex[elemIndex] << 32) | AttrLevel[elemIndex];
+                var key = TwoIntsToLong(AttrZIndex[elemIndex], AttrLevel[elemIndex]);
                 depthDescentHandlers[i] = new TraverseEntry<long>(key, elemIndex, depthDescentHandlers[i].Handler);
             }
             postPassHandlers.Clear();
@@ -342,7 +369,7 @@ namespace NeoGui.Core
 
             for (var i = 0; i < depthAscentHandlers.Count; ++i) { // rewrite now that we can know z-index
                 var elemIndex = depthAscentHandlers[i].ElemIndex;
-                long key = (AttrZIndex[elemIndex] << 32) | AttrLevel[elemIndex];
+                var key = TwoIntsToLong(AttrZIndex[elemIndex], AttrLevel[elemIndex]);
                 depthAscentHandlers[i] = new TraverseEntry<long>(key, elemIndex, depthAscentHandlers[i].Handler);
             }
             postPassHandlers.Clear();

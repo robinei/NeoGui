@@ -37,7 +37,7 @@ namespace NeoGui.Core
 
         public Vec2 TextSize(string text, int fontId = 0)
         {
-            return Context.Delegate.TextSize(text, fontId);
+            return Context.GetTextSize(text, fontId);
         }
     }
 }
