@@ -133,6 +133,7 @@ namespace NeoGui
 
     public class ScrollAreaState
     {
+        public Vec2 Overflow;
         public Vec2 Pos;
         public Vec2 OrigPos;
         public bool IsDragging;
@@ -178,7 +179,7 @@ namespace NeoGui
             var content = GetContentPanel(scrollArea);
             var overlay = GetOverlayPanel(scrollArea);
             var state = scrollArea.GetOrCreateState<ScrollAreaState>();
-            content.Pos = state.Pos;
+            content.Pos = state.Pos + state.Overflow;
             overlay.Rect = new Rect(scrollArea.Size);
         }
 
@@ -191,16 +192,16 @@ namespace NeoGui
             }
             var input = scrollArea.Context.Input;
             if (state.IsDragging) {
+                var content = GetContentPanel(scrollArea);
+
                 if (!input.IsDragging) {
                     state.IsDragging = false;
                     return;
                 }
                 
-                var content = GetContentPanel(scrollArea);
-
                 // apply the whole DragVector
-                var s = scrollArea.ToLocalScale(1.0f);
-                var pos = state.OrigPos + input.DragVector * s;
+                var scale = scrollArea.ToLocalScale(1.0f);
+                var pos = state.OrigPos + input.DragVector * scale;
                 
                 // move pos back if we went out of bounds
                 if (pos.X + content.Width < scrollArea.Width) { pos.X = scrollArea.Width - content.Width; }
@@ -210,15 +211,32 @@ namespace NeoGui
 
                 // subtract the part of the DragVector that we "used".
                 // what's left can be "used" by someone further up the hierarchy
-                input.DragVector -= (pos - state.OrigPos) * (1.0f / s);
+                input.DragVector -= (pos - state.OrigPos) * (1.0f / scale);
+                ++input.DragUserCount;
 
                 state.Pos = pos;
+
+                scrollArea.Context.RunAfterPass(scrollArea, HandleDragOverflow);
             } else if (input.IsDragging &&
                        scrollArea.AbsoluteRect.Contains(input.TrueDragOrigin) &&
                        scrollArea.ClipRect.Contains(input.TrueDragOrigin)) {
                 state.IsDragging = true;
                 state.OrigPos = state.Pos;
+            } else {
+                var len = state.Overflow.Length;
+                if (len > 0.1) {
+                    state.Overflow -= state.Overflow.Normalized * (float)(input.TimeDelta * len * 10);
+                }
             }
+        }
+
+        private static void HandleDragOverflow(Element scrollArea)
+        {
+            var input = scrollArea.Context.Input;
+            var state = scrollArea.GetOrCreateState<ScrollAreaState>();
+            var scale = scrollArea.ToLocalScale(1.0f);
+            var vec = (input.DragVector * scale) * (1.0f / input.DragUserCount);
+            state.Overflow = vec * (1.0f / (float)Math.Sqrt(vec.Length));
         }
 
         private static void DrawOverlay(DrawContext dc)
@@ -327,7 +345,9 @@ namespace NeoGui
                     
                     var outerScrollArea = ScrollArea.Create(tab1);
                     outerScrollArea.Rect = new Rect(10, 40, 300, 300);
-                    
+                    outerScrollArea.Set(Color.Red);
+                    outerScrollArea.Draw = DrawFuncs.DrawBackgroundColor;
+
                     var outerContentPanel = ScrollArea.GetContentPanel(outerScrollArea);
                     outerContentPanel.Size = new Vec2(500, 500);
                     outerContentPanel.Set(new BackgroundColor { Value = new Color(240, 240, 240) });
@@ -336,6 +356,8 @@ namespace NeoGui
 
                     var scrollArea = ScrollArea.Create(outerContentPanel);
                     scrollArea.Rect = new Rect(50, 50, 200, 200);
+                    scrollArea.Set(Color.Red);
+                    scrollArea.Draw = DrawFuncs.DrawBackgroundColor;
 
                     var contentPanel = ScrollArea.GetContentPanel(scrollArea);
                     contentPanel.Size = new Vec2(250, 250);

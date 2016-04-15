@@ -358,32 +358,52 @@ namespace NeoGui.Core
                 long key = (AttrZIndex[elemIndex] << 32) | AttrLevel[elemIndex];
                 depthDescentHandlers[i] = new TraverseEntry<long>(key, elemIndex, depthDescentHandlers[i].Handler);
             }
+            postPassHandlers.Clear();
             depthDescentHandlers.Sort();
             for (var i = depthDescentHandlers.Count - 1; i >= 0; --i) {
                 depthDescentHandlers[i].Handler(new Element(this, depthDescentHandlers[i].ElemIndex));
             }
+            RunPostPassHandlers();
 
             for (var i = 0; i < depthAscentHandlers.Count; ++i) { // rewrite now that we can know z-index
                 var elemIndex = depthAscentHandlers[i].ElemIndex;
                 long key = (AttrZIndex[elemIndex] << 32) | AttrLevel[elemIndex];
                 depthAscentHandlers[i] = new TraverseEntry<long>(key, elemIndex, depthAscentHandlers[i].Handler);
             }
+            postPassHandlers.Clear();
             depthAscentHandlers.Sort();
             for (var i = 0; i < depthAscentHandlers.Count; ++i) {
                 depthAscentHandlers[i].Handler(new Element(this, depthAscentHandlers[i].ElemIndex));
             }
+            RunPostPassHandlers();
 
+            postPassHandlers.Clear();
             treeDescentHandlers.Sort();
             for (var i = 0; i < treeDescentHandlers.Count; ++i) {
                 treeDescentHandlers[i].Handler(new Element(this, treeDescentHandlers[i].ElemIndex));
             }
+            RunPostPassHandlers();
 
+            postPassHandlers.Clear();
             treeAscentHandlers.Sort();
             for (var i = treeAscentHandlers.Count - 1; i >= 0; --i) {
                 treeAscentHandlers[i].Handler(new Element(this, treeAscentHandlers[i].ElemIndex));
             }
+            RunPostPassHandlers();
 
             inputTracker.PostUiUpdate();
+        }
+
+        private readonly List<KeyedValue<int, Action<Element>>> postPassHandlers = new List<KeyedValue<int, Action<Element>>>();
+        public void RunAfterPass(Element e, Action<Element> action)
+        {
+            postPassHandlers.Add(new KeyedValue<int, Action<Element>>(e.Index, action));
+        }
+        private void RunPostPassHandlers()
+        {
+            foreach (var entry in postPassHandlers) {
+                entry.Value(new Element(this, entry.Key));
+            }
         }
         #endregion
 

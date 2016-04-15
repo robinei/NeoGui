@@ -26,7 +26,7 @@ namespace NeoGui.Core
         private readonly bool[] mouseButtonPressConsumed = new bool[3];
         private readonly bool[] mouseButtonReleaseConsumed = new bool[3];
 
-
+        
         public double Time { get; private set; }
         public Vec2 MousePos { get; private set; }
 
@@ -48,6 +48,7 @@ namespace NeoGui.Core
             }
         }
 
+        public double TimeDelta => Time - prevInput.Time;
         public Vec2 MouseDelta => MousePos - prevInput.MousePos;
         public bool DidMouseMove => MouseDelta.SqrLength > 0;
 
@@ -59,6 +60,11 @@ namespace NeoGui.Core
         {
             get { return tracker.DragVector; }
             set { tracker.DragVector = value; }
+        }
+        public int DragUserCount
+        {
+            get { return tracker.DragUserCount; }
+            set { tracker.DragUserCount = value; }
         }
 
         public bool IsMouseButtonDown(MouseButton button) => mouseButtonDown[(int)button];
@@ -118,6 +124,7 @@ namespace NeoGui.Core
             }
 
             DragVector = IsDragging ? DragPos - DragOrigin : Vec2.Zero;
+            DragUserCount = 0;
         }
 
         public void PostUiUpdate()
@@ -135,5 +142,6 @@ namespace NeoGui.Core
         public Vec2 TrueDragOrigin { get; private set; }
         public Vec2 DragPos => Input.MousePos;
         public Vec2 DragVector { get; set; }
+        public int DragUserCount { get; set; }
     }
 }
