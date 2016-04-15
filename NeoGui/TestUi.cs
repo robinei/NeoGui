@@ -223,10 +223,7 @@ namespace NeoGui
                 state.IsDragging = true;
                 state.OrigPos = state.Pos;
             } else {
-                var len = state.Overflow.Length;
-                if (len > 0.1) {
-                    state.Overflow -= state.Overflow.Normalized * (float)(input.TimeDelta * len * 10);
-                }
+                state.Overflow -= state.Overflow * (float)(input.TimeDelta * 20.0);
             }
         }
 
@@ -236,7 +233,7 @@ namespace NeoGui
             var state = scrollArea.GetOrCreateState<ScrollAreaState>();
             var scale = scrollArea.ToLocalScale(1.0f);
             var vec = (input.DragRemainder * scale) * (1.0f / input.DragRemainderUses);
-            state.Overflow = vec * (1.0f / (float)Math.Sqrt(vec.Length));
+            state.Overflow = vec * (1.0f / (float)Math.Max(Math.Sqrt(vec.Length), 1.0));
         }
 
         private static void DrawOverlay(DrawContext dc)
