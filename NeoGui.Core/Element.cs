@@ -42,7 +42,15 @@ namespace NeoGui.Core
         public void OnTreeDescent(Action<Element> handler) { Context.AddTreeDescentHandler(Index, handler); }
         public void OnTreeAscent(Action<Element> handler) { Context.AddTreeAscentHandler(Index, handler); }
         
-        public void OnPassFinished(Action<Element> handler) { Context.RunAfterPass(this, handler); }
+        /// <summary>
+        /// Invoke in one of the above *Descent/*Ascent pass handlers to have this handler be called after the current pass has finished.
+        /// </summary>
+        public void OnPassFinished(Action<Element> handler) { Context.RunAfterPass(Index, handler); }
+
+        /// <summary>
+        /// Run when a node is inserted into the tree, after having not been in it for at least one frame.
+        /// </summary>
+        public void OnInserted(Action<Element> handler) { Context.AddInsertHandler(Index, handler); }
 
 
         public bool Has<TComponent>()

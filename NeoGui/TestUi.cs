@@ -117,6 +117,7 @@ namespace NeoGui
                     toggleLabel.Rect = new Rect(10, 100, 70, 20);
                     var toggle = ToggleSwitch.Create(contentPanel, switchValue, e => switchValue = !switchValue);
                     toggle.Pos = new Vec2(100, 102);
+                    toggle.OnInserted(e => Debug.WriteLine("switch inserted"));
                 }
             }
 

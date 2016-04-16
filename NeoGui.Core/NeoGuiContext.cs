@@ -44,6 +44,8 @@ namespace NeoGui.Core
         private readonly object rootKey = new object();
         private readonly List<int> keyCounters = new List<int>();
         private readonly ValueStorage<StateKeys, ElementId> rootStateHolder = new ValueStorage<StateKeys, ElementId>();
+        private Dictionary<ElementId, int> currIdToIndexMap = new Dictionary<ElementId, int>();
+        private Dictionary<ElementId, int> prevIdToIndexMap = new Dictionary<ElementId, int>();
 
         private int elementCount;
 
@@ -67,8 +69,6 @@ namespace NeoGui.Core
         // extra data which we don't deign to make an array for above goes here...
         internal readonly ValueStorage<DataKeys, int> DataStorage = new ValueStorage<DataKeys, int>();
         
-        internal readonly Dictionary<ElementId, int> IdToIndexMap = new Dictionary<ElementId, int>();
-        
 
         public readonly INeoGuiDelegate Delegate;
         public readonly InputContext Input;
@@ -83,9 +83,13 @@ namespace NeoGui.Core
         {
             FlipStateHolders();
 
+            var temp = currIdToIndexMap;
+            currIdToIndexMap = prevIdToIndexMap;
+            prevIdToIndexMap = temp;
+            currIdToIndexMap.Clear();
+
             elementCount = 0;
             keyCounters.Clear();
-            IdToIndexMap.Clear();
             AttrStateHolder[0] = rootStateHolder;
             AttrLevel[0] = -1; // will be overwritten by 0 on next line, since root is its own child
             CreateElement(new Element(this, 0), rootKey); // create root element (pretending it is its own parent)
@@ -94,10 +98,12 @@ namespace NeoGui.Core
 
             DataStorage.Clear();
             ClearTraverseHandlers();
+            insertHandlers.Clear();
         }
 
         public void EndFrame()
         {
+            RunInsertHandlers();
             PropagateDisablement();
             LayoutElements();
             CalcBottomToTopIndex();
@@ -141,7 +147,10 @@ namespace NeoGui.Core
                 keyCounters.Add(0);
             }
 
-            AttrId[elementCount] = new ElementId(key, keyIndex);
+            var id = new ElementId(key, keyIndex);
+            currIdToIndexMap[id] = elementCount;
+
+            AttrId[elementCount] = id;
             AttrName[elementCount] = "";
             AttrParent[elementCount] = parent.Index;
             AttrFirstChild[elementCount] = -1; // we have no children yet
@@ -156,8 +165,6 @@ namespace NeoGui.Core
             AttrRect[elementCount] = new Rect();
             AttrDrawFunc[elementCount] = null;
             AttrLayoutFunc[elementCount] = null;
-
-            IdToIndexMap[AttrId[elementCount]] = elementCount;
 
             return new Element(this, elementCount++);
         }
@@ -302,6 +309,21 @@ namespace NeoGui.Core
 
 
 
+        private readonly List<KeyedValue<int, Action<Element>>> insertHandlers = new List<KeyedValue<int, Action<Element>>>();
+
+        internal void AddInsertHandler(int elemIndex, Action<Element> handler)
+        {
+            insertHandlers.Add(new KeyedValue<int, Action<Element>>(elemIndex, handler));
+        }
+        private void RunInsertHandlers()
+        {
+            foreach (var entry in insertHandlers) {
+                if (!prevIdToIndexMap.ContainsKey(AttrId[entry.Key])) {
+                    entry.Value(new Element(this, entry.Key));
+                }
+            }
+        }
+
         #region Ascent/descent traversal
         private struct TraverseEntry<TKey> : IComparable<TraverseEntry<TKey>>
             where TKey: IComparable<TKey>
@@ -397,9 +419,9 @@ namespace NeoGui.Core
         }
 
         private readonly List<KeyedValue<int, Action<Element>>> postPassHandlers = new List<KeyedValue<int, Action<Element>>>();
-        internal void RunAfterPass(Element e, Action<Element> handler)
+        internal void RunAfterPass(int elemIndex, Action<Element> handler)
         {
-            postPassHandlers.Add(new KeyedValue<int, Action<Element>>(e.Index, handler));
+            postPassHandlers.Add(new KeyedValue<int, Action<Element>>(elemIndex, handler));
         }
         private void RunPostPassHandlers()
         {
