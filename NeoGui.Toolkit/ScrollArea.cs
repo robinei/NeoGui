@@ -51,16 +51,14 @@ namespace NeoGui.Toolkit
 
         public static Element GetContentPanel(Element scrollArea)
         {
-            var e = scrollArea.FirstChild.NextSibling;
-            Debug.Assert(e.Name == "ScrollArea.Content");
-            return e;
+            // ReSharper disable once PossibleInvalidOperationException
+            return scrollArea.FindChild(e => e.Name == "ScrollArea.Content").Value;
         }
 
         private static Element GetOverlayPanel(Element scrollArea)
         {
-            var e = scrollArea.FirstChild;
-            Debug.Assert(e.Name == "ScrollArea.Overlay");
-            return e;
+            // ReSharper disable once PossibleInvalidOperationException
+            return scrollArea.FindChild(e => e.Name == "ScrollArea.Overlay").Value;
         }
 
         public static void Layout(Element scrollArea)

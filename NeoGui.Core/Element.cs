@@ -237,7 +237,26 @@ namespace NeoGui.Core
         public static bool operator ==(Element a, Element b) { return a.Equals(b); }
         public static bool operator !=(Element a, Element b) { return !a.Equals(b); }
         #endregion
-        
+
+
+        public Element? FindChild(Func<Element, bool> predicate)
+        {
+            if (!HasChildren) {
+                return null;
+            }
+            var child = FirstChild;
+            while (true) {
+                if (predicate(child)) {
+                    return child;
+                }
+                if (!child.HasNextSibling) {
+                    return null;
+                }
+                child = child.NextSibling;
+            }
+        }
+
+
         #region Child enumeration
         public IEnumerable<Element> Children => new ChildEnumerable(Context, Index);
 
