@@ -41,8 +41,6 @@ namespace NeoGui
             graphics.SynchronizeWithVerticalRetrace = false;
             IsFixedTimeStep = false;
             Content.RootDirectory = "Content";
-
-            Debug.WriteLine("DrawCommand size: " + Marshal.SizeOf(typeof(DrawCommand)));
         }
         
         protected override void Initialize()
@@ -79,7 +77,7 @@ namespace NeoGui
         {
             ++frameCounter;
 
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == Microsoft.Xna.Framework.Input.ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape)) {
+            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape)) {
                 Exit();
             }
 
@@ -95,9 +93,9 @@ namespace NeoGui
                 inputInited = true;
             }
 
+            UpdateInput(gameTime);
             var bounds = GraphicsDevice.Viewport.Bounds;
             TestUi.DoUi(ui, bounds.Width, bounds.Height);
-            UpdateInput(gameTime);
             ui.RunUpdateTraversals();
 
             base.Update(gameTime);
@@ -108,9 +106,9 @@ namespace NeoGui
             var mouseState = Mouse.GetState();
             input.Time = gameTime.TotalGameTime.TotalSeconds;
             input.MousePos = new Vec2(mouseState.X, mouseState.Y);
-            input.MouseButtonDown[(int)MouseButton.Left] = mouseState.LeftButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
-            input.MouseButtonDown[(int)MouseButton.Right] = mouseState.RightButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
-            input.MouseButtonDown[(int)MouseButton.Middle] = mouseState.MiddleButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
+            input.MouseButtonDown[(int)MouseButton.Left] = mouseState.LeftButton == ButtonState.Pressed;
+            input.MouseButtonDown[(int)MouseButton.Right] = mouseState.RightButton == ButtonState.Pressed;
+            input.MouseButtonDown[(int)MouseButton.Middle] = mouseState.MiddleButton == ButtonState.Pressed;
             ui.Input.SetNewState(input);
         }
 

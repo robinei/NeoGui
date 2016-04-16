@@ -44,7 +44,14 @@ namespace NeoGui.Core
     {
         static DrawCommand()
         {
-            Debug.Assert(Marshal.SizeOf(typeof(ComparisonHelper)) >= Marshal.SizeOf(typeof(DrawCommand)));
+            var helperSize = Marshal.SizeOf(typeof(ComparisonHelper));
+            var commandSize = Marshal.SizeOf(typeof(DrawCommand));
+            if (helperSize == commandSize) {
+                Debug.WriteLine("DrawCommand size: " + commandSize);
+            } else {
+                Debug.WriteLine($"DrawCommand size ({commandSize}) different from ComparisonHelper ({helperSize}) size!");
+                Debug.Assert(helperSize >= commandSize);
+            }
         }
 
         [FieldOffset(0)]

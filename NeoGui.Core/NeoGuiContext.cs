@@ -375,8 +375,6 @@ namespace NeoGui.Core
         }
         public void RunUpdateTraversals()
         {
-            Input.PreUiUpdate();
-
             for (var i = 0; i < depthDescentHandlers.Count; ++i) { // rewrite now that we can know z-index
                 var elemIndex = depthDescentHandlers[i].ElemIndex;
                 var key = TwoIntsToLong(AttrZIndex[elemIndex], AttrLevel[elemIndex]);
@@ -414,8 +412,6 @@ namespace NeoGui.Core
                 treeAscentHandlers[i].Handler(new Element(this, treeAscentHandlers[i].ElemIndex));
             }
             RunPostPassHandlers();
-
-            Input.PostUiUpdate();
         }
 
         private readonly List<KeyedValue<int, Action<Element>>> postPassHandlers = new List<KeyedValue<int, Action<Element>>>();

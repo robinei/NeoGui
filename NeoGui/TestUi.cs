@@ -25,6 +25,8 @@ namespace NeoGui
 
         private static readonly object PanelKey = new object();
         private static readonly object ListKey = new object();
+        private static readonly object Tab1Key = new object();
+        private static readonly object Tab2Key = new object();
 
         public static void DoUi(NeoGuiContext ui, float windowWidth, float windowHeight)
         {
@@ -60,7 +62,7 @@ namespace NeoGui
                 tabButton1.Rect = new Rect(101, 0, 100, 30);
                 
                 if (state.ActiveTab == 0) {
-                    var tab0 = Element.Create(panel);
+                    var tab0 = Element.Create(panel, Tab1Key);
                     tab0.Rect = new Rect(0, 30, 300, 550);
 
                     var titleLabel = Label.Create(tab0, "This is tab 0", Color.Black);
@@ -83,7 +85,7 @@ namespace NeoGui
                         countLabel.Rect = new Rect(170, 50 + i * 40, 100, 30);
                     }
                 } else {
-                    var tab1 = Element.Create(panel);
+                    var tab1 = Element.Create(panel, Tab2Key);
                     tab1.Rect = new Rect(0, 30, 300, 550);
 
                     var titleLabel = Label.Create(tab1, "This is tab 1", Color.Black);
@@ -91,8 +93,9 @@ namespace NeoGui
                     
                     
                     var outerScrollArea = ScrollArea.Create(tab1);
+                    outerScrollArea.Name = "outerScrollArea";
                     outerScrollArea.Rect = new Rect(10, 40, 300, 300);
-                    Panel.AddProps(outerScrollArea, Color.LightGray);
+                    Panel.AddProps(outerScrollArea, new Color(182, 182, 182));
 
                     var outerContentPanel = ScrollArea.GetContentPanel(outerScrollArea);
                     outerContentPanel.Size = new Vec2(500, 500);
@@ -100,8 +103,9 @@ namespace NeoGui
 
 
                     var scrollArea = ScrollArea.Create(outerContentPanel);
+                    scrollArea.Name = "scrollArea";
                     scrollArea.Rect = new Rect(50, 50, 200, 200);
-                    Panel.AddProps(scrollArea, new Color(240, 240, 240));
+                    Panel.AddProps(scrollArea, new Color(230, 230, 230));
 
                     var contentPanel = ScrollArea.GetContentPanel(scrollArea);
                     contentPanel.Size = new Vec2(250, 250);
@@ -113,7 +117,7 @@ namespace NeoGui
                     var button = TextButton.Create(contentPanel, "Hello", e => Debug.WriteLine("Hello"));
                     button.Rect = new Rect(10, 50, 100, 30);
                     
-                    var toggleLabel = Label.Create(contentPanel, "Switch me:", Color.Black);
+                    var toggleLabel = Label.Create(contentPanel, "Toggle me:", Color.Black);
                     toggleLabel.Rect = new Rect(10, 100, 70, 20);
                     var toggle = ToggleSwitch.Create(contentPanel, switchValue, e => switchValue = !switchValue);
                     toggle.Pos = new Vec2(100, 102);
@@ -121,7 +125,7 @@ namespace NeoGui
                 }
             }
 
-            var virtualList = VirtualList.Create(root, 10000, 40.0f, (parent, index) => {
+            var virtualList = VirtualList.Create(root, 50, 40.0f, (parent, index) => {
                 var label = Label.Create(parent, "Row " + index, Color.Black);
                 return label;
             }, ListKey);

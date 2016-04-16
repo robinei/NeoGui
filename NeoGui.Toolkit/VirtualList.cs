@@ -7,7 +7,7 @@ namespace NeoGui.Toolkit
     {
         public static Element Create(Element parent, int itemCount, float itemHeight, Func<Element, int, Element> createItem, object key = null)
         {
-            var virtualList = ScrollArea.Create(parent, ScrollAreaFlags.OverDragY, key);
+            var virtualList = ScrollArea.Create(parent, ScrollAreaFlags.BounceY, key);
             virtualList.Layout = Layout;
             
             var state = virtualList.GetOrCreateState<ScrollAreaState>();
@@ -16,7 +16,7 @@ namespace NeoGui.Toolkit
             
             var index = Math.Max(0, (int)(-state.Pos.Y / itemHeight));
             var bottom = -state.Pos.Y + state.ClientSize.Y;
-            while (true) {
+            while (index < itemCount) {
                 var y = index * itemHeight;
                 if (y > bottom) {
                     break;

@@ -34,7 +34,6 @@ namespace NeoGui.Core
         private bool hasSetStateBefore;
 
         private readonly bool[] mouseButtonPressConsumed = new bool[3];
-        private bool dragPending;
 
         
         internal InputContext(NeoGuiContext context)
@@ -53,6 +52,8 @@ namespace NeoGui.Core
                 prev.CopyFrom(newState);
                 hasSetStateBefore = true;
             }
+
+            Update();
         }
         
 
@@ -62,46 +63,84 @@ namespace NeoGui.Core
         public Vec2 MousePos => curr.MousePos;
         public Vec2 MouseDelta => MousePos - prev.MousePos;
         public bool DidMouseMove => MouseDelta.SqrLength > 0;
-        
-        
+
+
+        public bool DidDragStart(bool respectIfConsumed = true) => dragStarted && (!respectIfConsumed || !dragStartedConsumed);
+        public void ConsumeDragStart()
+        {
+            dragStartedConsumed = true;
+        }
+
         public bool IsDragging { get; private set; }
         public Vec2 DragOrigin { get; private set; }
         public Vec2 TrueDragOrigin { get; private set; }
         public Vec2 DragPos => MousePos;
-        public Vec2 DragRemainder { get; set; }
-        public int DragRemainderUses { get; set; }
+        public Vec2 DragSpeed { get; private set; }
         
+        /// <summary>
+        /// Set to DragPos - DragOrigin at the start of each update.
+        /// Everyone who uses part of the drag in some way where it makes sense to just use part of it
+        /// subtracts the part they need from DragRemainder.
+        /// </summary>
+        public Vec2 DragRemainder { get; set; }
 
-        public void PreUiUpdate()
+        
+        private bool dragStarted;
+        private bool dragStartedConsumed;
+        private bool dragPending;
+        private double dragSpeedSampleStartTime;
+        private Vec2 dragSpeedSampleStartPos;
+        private bool hasGottenFirstDragSpeedSample;
+
+        public void Update()
         {
+            dragStarted = false;
+            dragStartedConsumed = false;
+
+            if (WasMouseButtonPressed(MouseButton.Left)) {
+                // it was pressed this frame, and no-one consumed it
+                dragPending = true;
+                dragSpeedSampleStartTime = Time;
+                dragSpeedSampleStartPos = MousePos;
+                hasGottenFirstDragSpeedSample = false;
+                DragSpeed = Vec2.Zero;
+                TrueDragOrigin = MousePos;
+            }
+
+            if (WasMouseButtonReleased(MouseButton.Left)) {
+                SampleDragSpeed();
+                dragPending = false;
+                IsDragging = false;
+            }
+
+            if (dragPending && (MousePos - TrueDragOrigin).Length > 5) {
+                dragStarted = true;
+                dragPending = false;
+                IsDragging = true;
+                DragOrigin = MousePos;
+            }
+
             DragRemainder = IsDragging ? DragPos - DragOrigin : Vec2.Zero;
-            DragRemainderUses = 0;
+            if ((dragPending || IsDragging) && Time - dragSpeedSampleStartTime > 0.05) {
+                SampleDragSpeed();
+            }
             
             for (var i = 0; i < 3; ++i) {
                 mouseButtonPressConsumed[i] = false;
             }
         }
 
-        public void PostUiUpdate()
+        private void SampleDragSpeed()
         {
-            if (WasMouseButtonPressed(MouseButton.Left)) {
-                // it was pressed this frame, and no-one consumed it
-                dragPending = true;
-                TrueDragOrigin = MousePos;
+            var speed = (DragPos - dragSpeedSampleStartPos) * (float)(1.0 / (Time - dragSpeedSampleStartTime));
+            if (hasGottenFirstDragSpeedSample) {
+                DragSpeed = DragSpeed * 0.75f + speed * 0.25f;
+            } else {
+                DragSpeed = speed;
+                hasGottenFirstDragSpeedSample = true;
             }
-
-            if (WasMouseButtonReleased(MouseButton.Left)) {
-                dragPending = false;
-                IsDragging = false;
-                TrueDragOrigin = Vec2.Zero;
-                DragOrigin = Vec2.Zero;
-            }
-
-            if (dragPending && (MousePos - TrueDragOrigin).Length > 5) {
-                dragPending = false;
-                IsDragging = true;
-                DragOrigin = MousePos;
-            }
+            dragSpeedSampleStartTime = Time;
+            dragSpeedSampleStartPos = MousePos;
         }
 
 

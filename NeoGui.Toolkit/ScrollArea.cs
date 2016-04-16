@@ -7,33 +7,51 @@ namespace NeoGui.Toolkit
     public class ScrollAreaState
     {
         public ScrollAreaFlags Flags;
-
-        public Vec2 Overflow;
         public Vec2 Pos;
-        public Vec2 OrigPos;
-        public bool IsDragging;
-
         public Vec2 ClientSize; // not used here, but useful in VirtualList for example
+
+        public readonly ScrollAreaAxisMode[] Mode = new ScrollAreaAxisMode[2];
+        
+        public bool IsDragging;
+        public Vec2 OrigPos; // value of Pos at start of drag
+        public Vec2 DriftSpeed; // drag speed at end of drag. decays over time
+        public Vec2 DragWanted;
+        
+        public readonly double[] AnimTimeStart = new double[2];
+        public readonly double[] AnimTimeEnd = new double[2];
+        public readonly float[] AnimPosInfo = new float[2];
     }
 
     [Flags]
     public enum ScrollAreaFlags
     {
-        OverDragX = 1,
-        OverDragY = 2
+        BounceX = 1,
+        BounceY = 2
+    }
+
+    public enum ScrollAreaAxisMode
+    {
+        Idle,
+        Drag,
+        Drift,
+        Bounce,
+        Debounce
     }
 
     public static class ScrollArea
     {
+        private const double BounceInterval = 0.2;
+        private const double DebounceInterval = 0.1;
+
         public static Element Create(
             Element parent, 
-            ScrollAreaFlags flags = ScrollAreaFlags.OverDragX | ScrollAreaFlags.OverDragY,
+            ScrollAreaFlags flags = ScrollAreaFlags.BounceX | ScrollAreaFlags.BounceY,
             object key = null)
         {
             var scrollArea = Element.Create(parent, key);
-            scrollArea.Name = "ScrollArea";
             scrollArea.ClipContent = true;
             scrollArea.Layout = Layout;
+            scrollArea.OnInserted(OnInserted);
             scrollArea.OnDepthDescent(OnDepthDescent);
             var state = scrollArea.GetOrCreateState<ScrollAreaState>();
             state.Flags = flags;
@@ -66,69 +84,212 @@ namespace NeoGui.Toolkit
             var content = GetContentPanel(scrollArea);
             var overlay = GetOverlayPanel(scrollArea);
             var state = scrollArea.GetOrCreateState<ScrollAreaState>();
-            content.Pos = state.Pos + state.Overflow;
+            content.Pos = state.Pos;
             overlay.Rect = new Rect(scrollArea.Size);
+        }
+
+        private static void OnInserted(Element scrollArea)
+        {
+            var content = GetContentPanel(scrollArea);
+            var state = scrollArea.GetOrCreateState<ScrollAreaState>();
+            state.Pos = ClampToBounds(state.Pos, content.Size, scrollArea.Size);
+            state.IsDragging = false;
+            state.Mode[0] = ScrollAreaAxisMode.Idle;
+            state.Mode[1] = ScrollAreaAxisMode.Idle;
         }
 
         private static void OnDepthDescent(Element scrollArea)
         {
-            var state = scrollArea.GetOrCreateState<ScrollAreaState>();
-            state.ClientSize = scrollArea.Size;
-            if (!scrollArea.Enabled) {
-                state.IsDragging = false;
-                return;
-            }
             var input = scrollArea.Context.Input;
-            if (state.IsDragging) {
-                var content = GetContentPanel(scrollArea);
+            var state = scrollArea.GetOrCreateState<ScrollAreaState>();
+            var content = GetContentPanel(scrollArea);
 
-                if (!input.IsDragging) {
-                    state.IsDragging = false;
-                    return;
-                }
-                
-                // apply the whole DragRemainder
-                var scale = scrollArea.ToLocalScale(1.0f);
-                var pos = state.OrigPos + input.DragRemainder * scale;
-                
-                // move pos back if we went out of bounds
-                if (pos.X + content.Width < scrollArea.Width) { pos.X = scrollArea.Width - content.Width; }
-                if (pos.Y + content.Height < scrollArea.Height) { pos.Y = scrollArea.Height - content.Height; }
-                if (pos.X > 0) { pos.X = 0; }
-                if (pos.Y > 0) { pos.Y = 0; }
+            state.ClientSize = scrollArea.Size;
 
-                // subtract the part of the DragRemainder that we "used".
-                // what's left can be "used" by someone further up the hierarchy
-                input.DragRemainder -= (pos - state.OrigPos) * (1.0f / scale);
-                ++input.DragRemainderUses;
-
-                state.Pos = pos;
-
-                scrollArea.OnPassFinished(HandleDragOverflow);
-            } else if (input.IsDragging &&
-                       scrollArea.AbsoluteRect.Contains(input.TrueDragOrigin) &&
-                       scrollArea.ClipRect.Contains(input.TrueDragOrigin)) {
+            if (input.DidDragStart() && scrollArea.Enabled &&
+                scrollArea.AbsoluteRect.Contains(input.TrueDragOrigin) &&
+                scrollArea.ClipRect.Contains(input.TrueDragOrigin)) {
                 state.IsDragging = true;
+                state.Mode[0] = ScrollAreaAxisMode.Drag;
+                state.Mode[1] = ScrollAreaAxisMode.Drag;
                 state.OrigPos = state.Pos;
-            } else {
-                state.Overflow -= state.Overflow * (float)(input.TimeDelta * 20.0);
             }
+
+            if (state.IsDragging) {
+                if (!input.IsDragging || !scrollArea.Enabled) {
+                    state.IsDragging = false;
+                } else {
+                    // apply the whole DragRemainder
+                    var scale = scrollArea.ToLocalScale(1.0f);
+                    var pos = state.OrigPos + input.DragRemainder * scale;
+                
+                    // move pos back if we went out of bounds
+                    pos = ClampToBounds(pos, content.Size, scrollArea.Size);
+                    
+                    state.DragWanted = input.DragRemainder;
+                    var dragUsed = (pos - state.OrigPos) / scale;
+
+                    // subtract the part of the DragRemainder that we "used".
+                    // what's left can be "used" by someone further up the hierarchy
+                    input.DragRemainder -= dragUsed;
+                }
+            }
+
+            scrollArea.OnPassFinished(Update);
         }
 
-        private static void HandleDragOverflow(Element scrollArea)
+        private static void Update(Element scrollArea)
+        {
+            UpdateAxis(scrollArea, 0);
+            UpdateAxis(scrollArea, 1);
+        }
+
+        private static void UpdateAxis(Element scrollArea, int axis)
         {
             var input = scrollArea.Context.Input;
             var state = scrollArea.GetOrCreateState<ScrollAreaState>();
-            var scale = scrollArea.ToLocalScale(1.0f);
-            var vec = (input.DragRemainder * scale) * (1.0f / input.DragRemainderUses);
-            state.Overflow = vec * (1.0f / (float)Math.Max(Math.Sqrt(vec.Length), 1.0));
-            if ((state.Flags & ScrollAreaFlags.OverDragX) == 0) {
-                state.Overflow.X = 0;
+            var content = GetContentPanel(scrollArea);
+            // TODO: handle scale
+
+            switch (state.Mode[axis]) {
+            case ScrollAreaAxisMode.Idle: {
+                state.Pos[axis] = ClampAxisToBounds(axis, state.Pos, content.Size, scrollArea.Size)[axis];
+                break;
             }
-            if ((state.Flags & ScrollAreaFlags.OverDragY) == 0) {
-                state.Overflow.Y = 0;
+            case ScrollAreaAxisMode.Drag:
+                if (state.IsDragging) {
+                    var posVec = state.OrigPos + state.DragWanted;
+                    var boundedPos = ClampToBounds(posVec, content.Size, scrollArea.Size)[axis];
+                    var pos = posVec[axis];
+                    if (Math.Abs(pos - boundedPos) > 0) {
+                        var fullDragAbs = Math.Abs(input.DragPos[axis] - input.DragOrigin[axis]);
+                        var dragWantedAbs = Math.Abs(state.DragWanted[axis]);
+                        var shareFactor = fullDragAbs > 0 ? dragWantedAbs / fullDragAbs : 1.0f;
+                        var displace = input.DragRemainder[axis] * shareFactor;
+                        displace *= 1.0f / (float)Math.Max(Math.Sqrt(Math.Abs(displace)), 1.0);
+                        pos = boundedPos + displace;
+                    }
+                    state.Pos[axis] = pos;
+                } else {
+                    if (state.Pos[axis] > 0 || state.Pos[axis] + content.Size[axis] < scrollArea.Size[axis]) {
+                        state.AnimPosInfo[axis] = state.Pos[axis]; // start pos
+                        state.AnimTimeStart[axis] = input.Time;
+                        state.AnimTimeEnd[axis] = input.Time + DebounceInterval;
+                        state.Mode[axis] = ScrollAreaAxisMode.Debounce;
+                    } else {
+                        if (Math.Abs(state.DragWanted[axis]) > 0) {
+                            state.DriftSpeed[axis] = input.DragSpeed[axis];
+                            state.Mode[axis] = ScrollAreaAxisMode.Drift;
+                        } else {
+                            state.Mode[axis] = ScrollAreaAxisMode.Idle;
+                        }
+                    }
+                }
+                break;
+            case ScrollAreaAxisMode.Drift:
+                state.Pos[axis] += (float)(state.DriftSpeed[axis] * input.TimeDelta);
+
+                state.DriftSpeed[axis] -= (float)(state.DriftSpeed[axis] * input.TimeDelta);
+                if (Math.Abs(state.DriftSpeed[axis]) < 10) {
+                    state.DriftSpeed[axis] -= (float)(state.DriftSpeed[axis] * input.TimeDelta * 2);
+                }
+                if (Math.Abs(state.DriftSpeed[axis]) < 2) {
+                    state.DriftSpeed[axis] = 0;
+                }
+
+                if (state.Pos[axis] > 0) {
+                    state.Pos[axis] = 0;
+                    state.AnimPosInfo[axis] = (float)Math.Sqrt(Math.Abs(state.DriftSpeed[axis]) * BounceInterval); // delta
+                    state.AnimTimeStart[axis] = input.Time;
+                    state.AnimTimeEnd[axis] = input.Time + BounceInterval;
+                    state.Mode[axis] = ScrollAreaAxisMode.Bounce;
+                } else if (state.Pos[axis] + content.Size[axis] < scrollArea.Size[axis]) {
+                    state.Pos[axis] = scrollArea.Size[axis] - content.Size[axis];
+                    state.AnimPosInfo[axis] = -(float)Math.Sqrt(Math.Abs(state.DriftSpeed[axis]) * BounceInterval); // delta
+                    state.AnimTimeStart[axis] = input.Time;
+                    state.AnimTimeEnd[axis] = input.Time + BounceInterval;
+                    state.Mode[axis] = ScrollAreaAxisMode.Bounce;
+                }
+                break;
+            case ScrollAreaAxisMode.Bounce: {
+                var delta = state.AnimPosInfo[axis];
+                float startPos = 0, endPos = delta;
+                if (delta < 0)  {
+                    startPos = scrollArea.Size[axis] - content.Size[axis];
+                    endPos = startPos + delta;
+                }
+                var t = NormalizeInInterval(input.Time, state.AnimTimeStart[axis], state.AnimTimeEnd[axis]);
+                t = 2 * Sigmoid(5 * t) - 0.986;
+                state.Pos[axis] = (float)(startPos + (endPos - startPos) * t);
+                if (t >= 1) {
+                    state.AnimPosInfo[axis] = state.Pos[axis]; // start pos
+                    state.AnimTimeStart[axis] = input.Time;
+                    state.AnimTimeEnd[axis] = input.Time + DebounceInterval;
+                    state.Mode[axis] = ScrollAreaAxisMode.Debounce;
+                }
+                break;
+            }
+            case ScrollAreaAxisMode.Debounce: {
+                float startPos = state.AnimPosInfo[axis], endPos = 0;
+                if (startPos < 0) {
+                    endPos = scrollArea.Size[axis] - content.Size[axis];
+                }
+                var t = NormalizeInInterval(input.Time, state.AnimTimeStart[axis], state.AnimTimeEnd[axis]);
+                t = 2 * Sigmoid(5 * t - 5) + 0.0001;
+                state.Pos[axis] = (float)(startPos + (endPos - startPos) * t);
+                if (t >= 1) {
+                    state.Mode[axis] = ScrollAreaAxisMode.Idle;
+                }
+                break;
+            }
+            default:
+                throw new ArgumentOutOfRangeException();
+            }
+
+            if ((state.Flags & AxisBounceFlags[axis]) == 0) {
+                state.Pos[axis] = ClampAxisToBounds(axis, state.Pos, content.Size, scrollArea.Size)[axis];
             }
         }
+
+        private static readonly ScrollAreaFlags[] AxisBounceFlags = {ScrollAreaFlags.BounceX, ScrollAreaFlags.BounceY};
+
+        private static float ClampToBoundsX(float x, float contentWidth, float clientWidth)
+        {
+            if (x > 0) { return 0; }
+            if (x + contentWidth < clientWidth) { return clientWidth - contentWidth; }
+            return x;
+        }
+
+        private static float ClampToBoundsY(float x, float contentWidth, float clientWidth)
+        {
+            if (x > 0) { return 0; }
+            if (x + contentWidth < clientWidth) { return clientWidth - contentWidth; }
+            return x;
+        }
+
+        private static Vec2 ClampToBounds(Vec2 pos, Vec2 contentSize, Vec2 clientSize)
+        {
+            pos.X = ClampToBoundsX(pos.X, contentSize.X, clientSize.X);
+            pos.Y = ClampToBoundsY(pos.Y, contentSize.Y, clientSize.Y);
+            return pos;
+        }
+
+        private static Vec2 ClampAxisToBounds(int axis, Vec2 pos, Vec2 contentSize, Vec2 clientSize)
+        {
+            if (axis == 0) {
+                pos.X = ClampToBoundsX(pos.X, contentSize.X, clientSize.X);
+            } else {
+                pos.Y = ClampToBoundsY(pos.Y, contentSize.Y, clientSize.Y);
+            }
+            return pos;
+        }
+
+        private static double NormalizeInInterval(double t, double start, double end)
+        {
+            return Math.Min(1, Math.Max(0, t - start) / (end - start));
+        }
+        
+        private static double Sigmoid(double t) => 1.0 / (1.0 + Math.Exp(-t));
 
         private static void DrawOverlay(DrawContext dc)
         {
@@ -141,7 +302,7 @@ namespace NeoGui.Toolkit
                 var offset = (scrollArea.Width - length) * -content.X / (content.Width - scrollArea.Width);
                 dc.SolidRect(new Rect(offset, scrollArea.Height - 5, length, 5), new Color(0, 0, 0, 64));
             }
-            
+
             if (content.Height > scrollArea.Height) {
                 var length = scrollArea.Height * scrollArea.Height / content.Height;
                 var offset = (scrollArea.Height - length) * -content.Y / (content.Height - scrollArea.Height);
