@@ -24,6 +24,7 @@ namespace NeoGui.Toolkit
             var label = Element.Create(parent);
             if (text != null) {
                 label.Set(new LabelText { Value = text });
+                label.Size = label.Context.Delegate.TextSize(text, 0);
             }
             if (color != null) {
                 label.Set(new LabelColor { Value = color.Value });
@@ -32,7 +33,6 @@ namespace NeoGui.Toolkit
                 label.Set(new LabelAlignment { Value = alignment.Value });
             }
             label.Draw = Draw;
-            label.Size = label.Context.Delegate.TextSize(text, 0);
             return label;
         }
 
