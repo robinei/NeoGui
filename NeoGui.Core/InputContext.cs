@@ -52,8 +52,6 @@ namespace NeoGui.Core
                 prev.CopyFrom(newState);
                 hasSetStateBefore = true;
             }
-
-            Update();
         }
         
 
@@ -92,20 +90,10 @@ namespace NeoGui.Core
         private Vec2 dragSpeedSampleStartPos;
         private bool hasGottenFirstDragSpeedSample;
 
-        public void Update()
+        internal void PreUiUpdate()
         {
             dragStarted = false;
             dragStartedConsumed = false;
-
-            if (WasMouseButtonPressed(MouseButton.Left)) {
-                // it was pressed this frame, and no-one consumed it
-                dragPending = true;
-                dragSpeedSampleStartTime = Time;
-                dragSpeedSampleStartPos = MousePos;
-                hasGottenFirstDragSpeedSample = false;
-                DragSpeed = Vec2.Zero;
-                TrueDragOrigin = MousePos;
-            }
 
             if (WasMouseButtonReleased(MouseButton.Left)) {
                 SampleDragSpeed();
@@ -127,6 +115,19 @@ namespace NeoGui.Core
             
             for (var i = 0; i < 3; ++i) {
                 mouseButtonPressConsumed[i] = false;
+            }
+        }
+
+        internal void PostUiUpdate()
+        {
+            if (WasMouseButtonPressed(MouseButton.Left)) {
+                // it was pressed this frame, and no-one consumed it
+                dragPending = true;
+                dragSpeedSampleStartTime = Time;
+                dragSpeedSampleStartPos = MousePos;
+                hasGottenFirstDragSpeedSample = false;
+                DragSpeed = Vec2.Zero;
+                TrueDragOrigin = MousePos;
             }
         }
 
