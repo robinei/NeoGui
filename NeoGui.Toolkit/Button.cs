@@ -47,7 +47,7 @@ namespace NeoGui.Toolkit
     {
         public static Element Create(Element parent, string text, Action<Element> onClick = null)
         {
-            var button = Label.Create(parent, text);
+            var button = Label.Create(parent, text, Color.White, TextAlignment.Center);
             ButtonBehavior.Add(button);
             button.Draw = Draw;
             if (onClick != null) {

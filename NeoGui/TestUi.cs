@@ -65,8 +65,8 @@ namespace NeoGui
                     var tab0 = Element.Create(panel, Tab1Key);
                     tab0.Rect = new Rect(0, 30, 300, 550);
 
-                    var titleLabel = Label.Create(tab0, "This is tab 0", Color.Black);
-                    titleLabel.Rect = new Rect(10, 10, 100, 30);
+                    var titleLabel = Label.Create(tab0, "This is tab 0");
+                    titleLabel.Pos = new Vec2(10, 10);
 
                     var addButton = TextButton.Create(tab0, "Add", e => {
                         e.FindState<TestState>().NumButtons++;
@@ -81,15 +81,15 @@ namespace NeoGui
                         button.Rect = new Rect(10, 50 + i * 40, 100 + (float)Math.Sin(ui.Input.Time * 3 + i * 0.1f) * 30, 30);
 
                         var countString = button.GetOrCreateState<TestCount>().StringValue;
-                        var countLabel = Label.Create(tab0, countString, Color.Black);
-                        countLabel.Rect = new Rect(170, 50 + i * 40, 100, 30);
+                        var countLabel = Label.Create(tab0, countString);
+                        countLabel.Pos = new Vec2(170, 50 + i * 40);
                     }
                 } else {
                     var tab1 = Element.Create(panel, Tab2Key);
                     tab1.Rect = new Rect(0, 30, 300, 550);
 
-                    var titleLabel = Label.Create(tab1, "This is tab 1", Color.Black);
-                    titleLabel.Rect = new Rect(10, 10, 100, 30);
+                    var titleLabel = Label.Create(tab1, "This is tab 1");
+                    titleLabel.Pos = new Vec2(10, 10);
                     
                     
                     var outerScrollArea = ScrollArea.Create(tab1);
@@ -111,14 +111,14 @@ namespace NeoGui
                     contentPanel.Size = new Vec2(250, 250);
                     Panel.AddProps(contentPanel, new Color(220, 220, 220));
 
-                    var label = Label.Create(contentPanel, "Drag me", Color.Black);
-                    label.Rect = new Rect(10, 10, 100, 30);
+                    var label = Label.Create(contentPanel, "Drag me");
+                    label.Pos = new Vec2(10, 10);
 
                     var button = TextButton.Create(contentPanel, "Hello", e => Debug.WriteLine("Hello"));
                     button.Rect = new Rect(10, 50, 100, 30);
                     
-                    var toggleLabel = Label.Create(contentPanel, "Toggle me:", Color.Black);
-                    toggleLabel.Rect = new Rect(10, 100, 70, 20);
+                    var toggleLabel = Label.Create(contentPanel, "Toggle me:");
+                    toggleLabel.Pos = new Vec2(10, 100);
                     var toggle = ToggleSwitch.Create(contentPanel, switchValue, e => switchValue = !switchValue);
                     toggle.Pos = new Vec2(100, 102);
                     toggle.OnInserted(e => Debug.WriteLine("switch inserted"));
@@ -126,7 +126,7 @@ namespace NeoGui
             }
 
             var virtualList = VirtualList.Create(root, 50, 40.0f, (parent, index) => {
-                var label = Label.Create(parent, "Row " + index, Color.Black);
+                var label = Label.Create(parent, "Row " + index, alignment: (TextAlignment)(index % 3));
                 return label;
             }, ListKey);
             virtualList.Rect = new Rect(550, 80, 100, 600);
