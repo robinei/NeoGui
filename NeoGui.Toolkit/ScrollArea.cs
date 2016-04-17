@@ -26,7 +26,9 @@ namespace NeoGui.Toolkit
     public enum ScrollAreaFlags
     {
         BounceX = 1,
-        BounceY = 2
+        BounceY = 2,
+        FillX = 4, // implies that the width of the content panel will be set to equal to that of the scroll area. so no scrolling
+        FillY = 8
     }
 
     public enum ScrollAreaAxisMode
@@ -46,6 +48,7 @@ namespace NeoGui.Toolkit
         public static Element Create(
             Element parent, 
             ScrollAreaFlags flags = ScrollAreaFlags.BounceX | ScrollAreaFlags.BounceY,
+            Func<Element, Element> contentCreator = null,
             object key = null)
         {
             var scrollArea = Element.Create(parent, key);
@@ -56,7 +59,7 @@ namespace NeoGui.Toolkit
             var state = scrollArea.GetOrCreateState<ScrollAreaState>();
             state.Flags = flags;
 
-            var content = Element.Create(scrollArea);
+            var content = contentCreator?.Invoke(scrollArea) ?? Element.Create(scrollArea);
             content.Name = "ScrollArea.Content";
 
             var overlay = Element.Create(scrollArea);
@@ -85,6 +88,8 @@ namespace NeoGui.Toolkit
             var overlay = GetOverlayPanel(scrollArea);
             var state = scrollArea.GetOrCreateState<ScrollAreaState>();
             content.Pos = state.Pos;
+            if ((state.Flags & ScrollAreaFlags.FillX) != 0) { content.Width = scrollArea.Width; }
+            if ((state.Flags & ScrollAreaFlags.FillY) != 0) { content.Height = scrollArea.Height; }
             overlay.Rect = new Rect(scrollArea.Size);
         }
 
@@ -233,6 +238,9 @@ namespace NeoGui.Toolkit
                 float startPos = state.AnimPosInfo[axis], endPos = 0;
                 if (startPos < 0) {
                     endPos = scrollArea.Size[axis] - content.Size[axis];
+                    if (endPos > 0) {
+                        endPos = 0;
+                    }
                 }
                 var t = NormalizeInInterval(input.Time, state.AnimTimeStart[axis], state.AnimTimeEnd[axis]);
                 t = 2 * Sigmoid(5 * t - 5) + 0.0001;
@@ -253,33 +261,33 @@ namespace NeoGui.Toolkit
 
         private static readonly ScrollAreaFlags[] AxisBounceFlags = {ScrollAreaFlags.BounceX, ScrollAreaFlags.BounceY};
 
-        private static float ClampToBoundsX(float x, float contentWidth, float clientWidth)
+        private static float ClampToBounds(float pos, float contentSize, float clientSize)
         {
-            if (x > 0) { return 0; }
-            if (x + contentWidth < clientWidth) { return clientWidth - contentWidth; }
-            return x;
-        }
-
-        private static float ClampToBoundsY(float x, float contentWidth, float clientWidth)
-        {
-            if (x > 0) { return 0; }
-            if (x + contentWidth < clientWidth) { return clientWidth - contentWidth; }
-            return x;
+            if (pos > 0) {
+                return 0;
+            }
+            if (pos + contentSize < clientSize) {
+                if (clientSize - contentSize > 0) {
+                    return 0;
+                }
+                return clientSize - contentSize;
+            }
+            return pos;
         }
 
         private static Vec2 ClampToBounds(Vec2 pos, Vec2 contentSize, Vec2 clientSize)
         {
-            pos.X = ClampToBoundsX(pos.X, contentSize.X, clientSize.X);
-            pos.Y = ClampToBoundsY(pos.Y, contentSize.Y, clientSize.Y);
+            pos.X = ClampToBounds(pos.X, contentSize.X, clientSize.X);
+            pos.Y = ClampToBounds(pos.Y, contentSize.Y, clientSize.Y);
             return pos;
         }
 
         private static Vec2 ClampAxisToBounds(int axis, Vec2 pos, Vec2 contentSize, Vec2 clientSize)
         {
             if (axis == 0) {
-                pos.X = ClampToBoundsX(pos.X, contentSize.X, clientSize.X);
+                pos.X = ClampToBounds(pos.X, contentSize.X, clientSize.X);
             } else {
-                pos.Y = ClampToBoundsY(pos.Y, contentSize.Y, clientSize.Y);
+                pos.Y = ClampToBounds(pos.Y, contentSize.Y, clientSize.Y);
             }
             return pos;
         }

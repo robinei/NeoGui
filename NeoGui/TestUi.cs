@@ -73,16 +73,26 @@ namespace NeoGui
                     });
                     addButton.Rect = new Rect(150, 10, 100, 30);
 
+                    var buttonScroller = ScrollArea.Create(tab0, ScrollAreaFlags.BounceY | ScrollAreaFlags.FillX);
+                    var buttonContent = ScrollArea.GetContentPanel(buttonScroller);
+                    Panel.AddProps(buttonScroller, new Color(200, 200, 200));
+                    buttonScroller.Rect = new Rect(10, 70, 250, 400);
+                    StackLayout.AddProps(buttonContent);
                     for (var i = 0; i < state.NumButtons; ++i) {
-                        var button = TextButton.Create(tab0, "Ok", e => {
+                        var row = Element.Create(buttonContent);
+                        row.Height = 30;
+
+                        var button = TextButton.Create(row, "Ok", e => {
                             var s = e.GetOrCreateState<TestCount>();
                             s.StringValue = $"count: {++s.Value}";
                         });
-                        button.Rect = new Rect(10, 50 + i * 40, 100 + (float)Math.Sin(ui.Input.Time * 3 + i * 0.1f) * 30, 30);
+                        button.Size = new Vec2(100 + (float)Math.Sin(ui.Input.Time * 3 + i * 0.1f) * 30, 30);
 
-                        var countString = button.GetOrCreateState<TestCount>().StringValue;
-                        var countLabel = Label.Create(tab0, countString);
-                        countLabel.Pos = new Vec2(170, 50 + i * 40);
+                        var buttonCount = button.GetOrCreateState<TestCount>();
+                        var countString = buttonCount.StringValue;
+                        var countLabel = Label.Create(row, countString);
+                        countLabel.Rect = new Rect(170, 0, 100, 30);
+                        countLabel.SizeToFit = false;
                     }
                 } else {
                     var tab1 = Element.Create(panel, Tab2Key);
@@ -93,7 +103,6 @@ namespace NeoGui
                     
                     
                     var outerScrollArea = ScrollArea.Create(tab1);
-                    outerScrollArea.Name = "outerScrollArea";
                     outerScrollArea.Rect = new Rect(10, 40, 300, 300);
                     Panel.AddProps(outerScrollArea, new Color(182, 182, 182));
 
@@ -103,7 +112,6 @@ namespace NeoGui
 
 
                     var scrollArea = ScrollArea.Create(outerContentPanel);
-                    scrollArea.Name = "scrollArea";
                     scrollArea.Rect = new Rect(50, 50, 200, 200);
                     Panel.AddProps(scrollArea, new Color(230, 230, 230));
 
@@ -130,6 +138,7 @@ namespace NeoGui
                 return label;
             }, ListKey);
             virtualList.Rect = new Rect(550, 80, 100, 600);
+            Panel.AddProps(ScrollArea.GetContentPanel(virtualList), new Color(240, 240, 240));
 
             ui.EndFrame();
         }

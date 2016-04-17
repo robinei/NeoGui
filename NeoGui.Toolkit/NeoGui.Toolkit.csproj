@@ -46,6 +46,7 @@
     <Compile Include="Panel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ScrollArea.cs" />
+    <Compile Include="StackLayout.cs" />
     <Compile Include="ToggleSwitch.cs" />
     <Compile Include="VirtualList.cs" />
   </ItemGroup>

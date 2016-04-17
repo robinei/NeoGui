@@ -329,7 +329,7 @@ namespace NeoGui.Core
 
         internal bool GetFlag(int elemIndex, ElementFlags flag)
         {
-            return (AttrFlags[elemIndex] & flag) != 0;
+            return (AttrFlags[elemIndex] & flag) == flag;
         }
         internal void SetFlag(int elemIndex, ElementFlags flag, bool value)
         {
