@@ -21,7 +21,7 @@ namespace NeoGui.Toolkit
         {
             var input = e.Context.Input;
             var state = e.GetOrCreateState<ButtonState>();
-            if (!e.Enabled) {
+            if (e.Disabled) {
                 state.MousePressed = false;
                 return;
             }
@@ -61,7 +61,7 @@ namespace NeoGui.Toolkit
             var button = dc.Target;
             var size = button.Size;
             var color = Color.Gray;
-            if (button.Enabled && button.IsUnderMouse) {
+            if (!button.Disabled && button.IsUnderMouse) {
                 var state = button.GetState<ButtonState>();
                 if (state != null) {
                     color = state.MousePressed ? Color.Black : Color.DarkGray;
@@ -69,7 +69,7 @@ namespace NeoGui.Toolkit
             }
             dc.SolidRect(new Rect(size), color);
             Label.Draw(dc);
-            if (!button.Enabled) {
+            if (button.Disabled) {
                 dc.SolidRect(new Rect(size), new Color(0, 0, 0, 64));
             }
         }

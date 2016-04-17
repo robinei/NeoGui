@@ -52,13 +52,13 @@ namespace NeoGui
                 var tabButton0 = TextButton.Create(panel, "Tab 0", e => {
                     e.FindState<TestState>().ActiveTab = 0;
                 });
-                tabButton0.Enabled = state.ActiveTab != 0;
+                tabButton0.Disabled = state.ActiveTab == 0;
                 tabButton0.Rect = new Rect(0, 0, 100, 30);
 
                 var tabButton1 = TextButton.Create(panel, "Tab 1", e => {
                     e.FindState<TestState>().ActiveTab = 1;
                 });
-                tabButton1.Enabled = state.ActiveTab != 1;
+                tabButton1.Disabled = state.ActiveTab == 1;
                 tabButton1.Rect = new Rect(101, 0, 100, 30);
                 
                 if (state.ActiveTab == 0) {

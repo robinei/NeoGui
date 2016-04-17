@@ -106,7 +106,7 @@ namespace NeoGui.Toolkit
 
             state.ClientSize = scrollArea.Size;
 
-            if (input.DidDragStart() && scrollArea.Enabled &&
+            if (input.DidDragStart() && !scrollArea.Disabled &&
                 scrollArea.AbsoluteRect.Contains(input.TrueDragOrigin) &&
                 scrollArea.ClipRect.Contains(input.TrueDragOrigin)) {
                 state.IsDragging = true;
@@ -116,7 +116,7 @@ namespace NeoGui.Toolkit
             }
 
             if (state.IsDragging) {
-                if (!input.IsDragging || !scrollArea.Enabled) {
+                if (!input.IsDragging || scrollArea.Disabled) {
                     state.IsDragging = false;
                 } else {
                     // apply the whole DragRemainder

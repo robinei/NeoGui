@@ -144,13 +144,13 @@ namespace NeoGui.Core
         }
         public bool ClipContent
         {
-            get { return Context.AttrClipContent[Index]; }
-            set { Context.AttrClipContent[Index] = value; }
+            get { return Context.GetFlag(Index, ElementFlags.ClipContent); }
+            set { Context.SetFlag(Index, ElementFlags.ClipContent, value); }
         }
-        public bool Enabled
+        public bool Disabled
         {
-            get { return Context.AttrEnabled[Index]; }
-            set { Context.AttrEnabled[Index] = value; }
+            get { return Context.GetFlag(Index, ElementFlags.Disabled); }
+            set { Context.SetFlag(Index, ElementFlags.Disabled, value); }
         }
         public int ZIndex
         {

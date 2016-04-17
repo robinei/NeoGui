@@ -31,6 +31,13 @@ namespace NeoGui.Core
         }
     }
 
+    [Flags]
+    internal enum ElementFlags
+    {
+        Disabled = 1,
+        ClipContent = 2,
+        Opaque = 4
+    }
 
     public class NeoGuiContext
     {
@@ -56,8 +63,7 @@ namespace NeoGui.Core
         internal int[] AttrNextSibling = new int[InitialArraySize];
         internal int[] AttrLevel = new int[InitialArraySize];
         internal int[] AttrZIndex = new int[InitialArraySize];
-        internal bool[] AttrClipContent = new bool[InitialArraySize];
-        internal bool[] AttrEnabled = new bool[InitialArraySize];
+        internal ElementFlags[] AttrFlags = new ElementFlags[InitialArraySize];
         internal int[] AttrKeyCounterIndex = new int[InitialArraySize];
         internal ValueStorage<StateKeys, ElementId>[] AttrStateHolder = new ValueStorage<StateKeys, ElementId>[InitialArraySize];
         internal Rect[] AttrRect = new Rect[InitialArraySize];
@@ -124,8 +130,7 @@ namespace NeoGui.Core
                 Array.Resize(ref AttrNextSibling, newLength);
                 Array.Resize(ref AttrLevel, newLength);
                 Array.Resize(ref AttrZIndex, newLength);
-                Array.Resize(ref AttrClipContent, newLength);
-                Array.Resize(ref AttrEnabled, newLength);
+                Array.Resize(ref AttrFlags, newLength);
                 Array.Resize(ref AttrKeyCounterIndex, newLength);
                 Array.Resize(ref AttrStateHolder, newLength);
                 Array.Resize(ref AttrRect, newLength);
@@ -158,8 +163,7 @@ namespace NeoGui.Core
             AttrFirstChild[parent.Index] = elementCount; // set this element as parent's first child
             AttrLevel[elementCount] = AttrLevel[parent.Index] + 1;
             AttrZIndex[elementCount] = 0;
-            AttrClipContent[elementCount] = false;
-            AttrEnabled[elementCount] = true;
+            AttrFlags[elementCount] = 0;
             AttrKeyCounterIndex[elementCount] = keyCounterIndex;
             AttrStateHolder[elementCount] = AttrStateHolder[parent.Index]; // inherit parent state holder
             AttrRect[elementCount] = new Rect();
@@ -173,7 +177,9 @@ namespace NeoGui.Core
         private void PropagateDisablement()
         {
             for (var i = 1; i < elementCount; ++i) {
-                AttrEnabled[i] = AttrEnabled[i] && AttrEnabled[AttrParent[i]];
+                if (GetFlag(AttrParent[i], ElementFlags.Disabled)) {
+                    SetFlag(i, ElementFlags.Disabled, true);
+                }
             }
         }
 
@@ -197,7 +203,7 @@ namespace NeoGui.Core
             AttrClipRect[0] = AttrAbsRect[0];
             for (var i = 1; i < elementCount; ++i) {
                 var parentClipRect = AttrClipRect[AttrParent[i]];
-                if (AttrClipContent[i]) {
+                if (GetFlag(i, ElementFlags.ClipContent)) {
                     AttrClipRect[i] = parentClipRect.Intersection(AttrAbsRect[i]);
                 } else {
                     AttrClipRect[i] = parentClipRect;
@@ -304,6 +310,20 @@ namespace NeoGui.Core
         {
             unchecked {
                 return ((long)a << 32) | (uint)b;
+            }
+        }
+
+
+        internal bool GetFlag(int elemIndex, ElementFlags flag)
+        {
+            return (AttrFlags[elemIndex] & flag) != 0;
+        }
+        internal void SetFlag(int elemIndex, ElementFlags flag, bool value)
+        {
+            if (value) {
+                AttrFlags[elemIndex] |= flag;
+            } else {
+                AttrFlags[elemIndex] &= ~flag;
             }
         }
 
