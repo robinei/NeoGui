@@ -306,13 +306,13 @@ namespace NeoGui.Toolkit
             var content = GetContentPanel(scrollArea);
 
             if (content.Width > scrollArea.Width) {
-                var length = scrollArea.Width * scrollArea.Width / content.Width;
+                var length = Math.Max(20, scrollArea.Width * scrollArea.Width / content.Width);
                 var offset = (scrollArea.Width - length) * -content.X / (content.Width - scrollArea.Width);
                 dc.SolidRect(new Rect(offset, scrollArea.Height - 5, length, 5), new Color(0, 0, 0, 64));
             }
 
             if (content.Height > scrollArea.Height) {
-                var length = scrollArea.Height * scrollArea.Height / content.Height;
+                var length = Math.Max(20, scrollArea.Height * scrollArea.Height / content.Height);
                 var offset = (scrollArea.Height - length) * -content.Y / (content.Height - scrollArea.Height);
                 dc.SolidRect(new Rect(scrollArea.Width - 5, offset, 5, length), new Color(0, 0, 0, 64));
             }

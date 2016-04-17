@@ -10,7 +10,7 @@ namespace NeoGui
         private class TestState
         {
             public int ActiveTab = 1;
-            public int NumButtons = 3;
+            public int NumButtons = 10;
         }
 
         private class TestCount
@@ -67,11 +67,17 @@ namespace NeoGui
 
                     var titleLabel = Label.Create(tab0, "This is tab 0");
                     titleLabel.Pos = new Vec2(10, 10);
+                    var buttonCountLabel = Label.Create(tab0, "Button count: " + state.NumButtons);
+                    buttonCountLabel.Pos = new Vec2(10, 40);
 
-                    var addButton = TextButton.Create(tab0, "Add", e => {
+                    var addButton = TextButton.Create(tab0, "Add 1", e => {
                         e.FindState<TestState>().NumButtons++;
                     });
                     addButton.Rect = new Rect(150, 10, 100, 30);
+                    var addButton2 = TextButton.Create(tab0, "Add 100", e => {
+                        e.FindState<TestState>().NumButtons += 100;
+                    });
+                    addButton2.Rect = new Rect(260, 10, 100, 30);
 
                     var buttonScroller = ScrollArea.Create(tab0, ScrollAreaFlags.BounceY | ScrollAreaFlags.FillX);
                     var buttonContent = ScrollArea.GetContentPanel(buttonScroller);
