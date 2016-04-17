@@ -254,7 +254,7 @@ namespace NeoGui.Core
             drawContext.CommandBuffer = currDrawCommandBuffer;
             foreach (var entry in bottomToTopIndex) {
                 var elemIndex = entry.Value;
-                if (AttrDrawFunc[elemIndex] != null) {
+                if (AttrDrawFunc[elemIndex] != null && AttrClipRect[elemIndex].Intersects(AttrAbsRect[elemIndex])) {
                     drawContext.Target = new Element(this, elemIndex);
                     AttrDrawFunc[elemIndex](drawContext);
                 }
