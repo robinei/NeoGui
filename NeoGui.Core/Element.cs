@@ -152,6 +152,16 @@ namespace NeoGui.Core
             get { return Context.GetFlag(Index, ElementFlags.Disabled); }
             set { Context.SetFlag(Index, ElementFlags.Disabled, value); }
         }
+        public bool Opaque
+        {
+            get { return Context.GetFlag(Index, ElementFlags.Opaque); }
+            set { Context.SetFlag(Index, ElementFlags.Opaque, value); }
+        }
+        public bool SizeToFit
+        {
+            get { return Context.GetFlag(Index, ElementFlags.SizeToFit); }
+            set { Context.SetFlag(Index, ElementFlags.SizeToFit, value); }
+        }
         public int ZIndex
         {
             get { return Context.AttrZIndex[Index]; }
@@ -201,7 +211,11 @@ namespace NeoGui.Core
             get { return Context.AttrDrawFunc[Index]; }
             set { Context.AttrDrawFunc[Index] = value; }
         }
-
+        public Action<Element> Measure
+        {
+            get { return Context.AttrMeasureFunc[Index]; }
+            set { Context.AttrMeasureFunc[Index] = value; }
+        }
         public Action<Element> Layout
         {
             get { return Context.AttrLayoutFunc[Index]; }

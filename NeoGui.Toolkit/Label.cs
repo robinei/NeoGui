@@ -11,37 +11,49 @@ namespace NeoGui.Toolkit
 
     public struct LabelText { public string Value; }
     public struct LabelColor { public Color Value; }
-    public struct LabelAlignment { public TextAlignment Value; }
 
     public static class Label
     {
-        private static readonly LabelText DefaultText = new LabelText {Value = ""};
         private static readonly LabelColor DefaultColor = new LabelColor {Value = Color.Black};
-        private static readonly LabelAlignment DefaultAlignment = new LabelAlignment {Value = TextAlignment.Left};
+        private const TextAlignment DefaultAlignment = TextAlignment.Left;
 
         public static Element Create(Element parent, string text, Color? color = null, TextAlignment? alignment = null)
         {
             var label = Element.Create(parent);
             if (text != null) {
                 label.Set(new LabelText { Value = text });
-                label.Size = label.Context.Delegate.TextSize(text, 0);
             }
             if (color != null) {
                 label.Set(new LabelColor { Value = color.Value });
             }
             if (alignment != null) {
-                label.Set(new LabelAlignment { Value = alignment.Value });
+                label.Set(alignment.Value);
             }
+            label.SizeToFit = true;
+            label.Measure = Measure;
             label.Draw = Draw;
             return label;
+        }
+
+        public static void Measure(Element label)
+        {
+            if (label.SizeToFit) {
+                var text = label.Get<LabelText>().Value;
+                if (text != null) {
+                    label.Size = label.Context.Delegate.TextSize(text, 0); // TODO: fontId
+                }
+            }
         }
 
         public static void Draw(DrawContext dc)
         {
             var label = dc.Target;
-            var text = label.Get(DefaultText).Value;
+            var text = label.Get<LabelText>().Value;
+            if (string.IsNullOrEmpty(text)) {
+                return;
+            }
             var color = label.Get(DefaultColor).Value;
-            var alignment = label.Get(DefaultAlignment).Value;
+            var alignment = label.Get(DefaultAlignment);
             var size = label.Size;
             var textSize = dc.TextSize(text);
             var y = (size.Y - textSize.Y) * 0.5f;

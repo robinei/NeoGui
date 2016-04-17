@@ -49,6 +49,7 @@ namespace NeoGui.Toolkit
         {
             var button = Label.Create(parent, text, Color.White, TextAlignment.Center);
             ButtonBehavior.Add(button);
+            button.SizeToFit = false;
             button.Draw = Draw;
             if (onClick != null) {
                 button.Set(new ButtonCallback { OnClick = onClick });

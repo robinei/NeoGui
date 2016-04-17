@@ -37,7 +37,8 @@ namespace NeoGui.Core
     {
         Disabled = 1,
         ClipContent = 2,
-        Opaque = 4
+        Opaque = 4,
+        SizeToFit = 8
     }
 
     public class NeoGuiContext
@@ -71,6 +72,7 @@ namespace NeoGui.Core
         internal Rect[] AttrAbsRect = new Rect[InitialArraySize]; // absolute coordinates
         internal Rect[] AttrClipRect = new Rect[InitialArraySize];
         internal Action<DrawContext>[] AttrDrawFunc = new Action<DrawContext>[InitialArraySize];
+        internal Action<Element>[] AttrMeasureFunc = new Action<Element>[InitialArraySize];
         internal Action<Element>[] AttrLayoutFunc = new Action<Element>[InitialArraySize];
 
         // extra data which we don't deign to make an array for above goes here...
@@ -112,9 +114,10 @@ namespace NeoGui.Core
         {
             RunInsertHandlers();
             PropagateDisablement();
+            MeasureElements();
             LayoutElements();
-            CalcBottomToTopIndex();
             CalcRects();
+            CalcBottomToTopIndex();
             DrawElements();
         }
         
@@ -138,6 +141,7 @@ namespace NeoGui.Core
                 Array.Resize(ref AttrAbsRect, newLength);
                 Array.Resize(ref AttrClipRect, newLength);
                 Array.Resize(ref AttrDrawFunc, newLength);
+                Array.Resize(ref AttrMeasureFunc, newLength);
                 Array.Resize(ref AttrLayoutFunc, newLength);
             }
 
@@ -169,6 +173,7 @@ namespace NeoGui.Core
             AttrStateHolder[elementCount] = AttrStateHolder[parent.Index]; // inherit parent state holder
             AttrRect[elementCount] = new Rect();
             AttrDrawFunc[elementCount] = null;
+            AttrMeasureFunc[elementCount] = null;
             AttrLayoutFunc[elementCount] = null;
 
             return new Element(this, elementCount++);
@@ -184,9 +189,16 @@ namespace NeoGui.Core
             }
         }
 
+        private void MeasureElements()
+        {
+            for (var i = elementCount - 1; i >= 0; --i) { // bottom up
+                AttrMeasureFunc[i]?.Invoke(new Element(this, i));
+            }
+        }
+
         private void LayoutElements()
         {
-            for (var i = 0; i < elementCount; ++i) {
+            for (var i = 0; i < elementCount; ++i) { // top down
                 AttrLayoutFunc[i]?.Invoke(new Element(this, i));
             }
         }
