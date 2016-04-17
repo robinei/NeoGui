@@ -51,6 +51,14 @@ namespace NeoGui.Core
 
         public bool Contains(Vec2 p) => !(p.X < X || p.Y < Y || p.X > X + Width || p.Y > Y + Height);
 
+        public bool Intersects(Rect r)
+        {
+            return !(X >= r.X + r.Width ||
+                     r.X >= X + Width ||
+                     Y >= r.Y + r.Height ||
+                     r.Y >= Y + Height);
+        }
+
         public Rect Intersection(Rect r)
         {
             var x = Math.Max(X, r.X);
