@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -41,6 +43,41 @@ namespace NeoGui
             graphics.SynchronizeWithVerticalRetrace = false;
             IsFixedTimeStep = false;
             Content.RootDirectory = "Content";
+            
+            /*const int count = 1000000;
+            int[] keys;
+            {
+                var rnd = new Random(1234);
+                var keySet = new HashSet<int>();
+                while (keySet.Count < count) {
+                    keySet.Add(rnd.Next(10000000));
+                }
+                keys = keySet.ToArray();
+            }
+
+            {
+                var watch = new Stopwatch();
+                watch.Start();
+                var table = new HopscotchHashTable<int, int>();
+                if (table.Count != 0) {
+                    throw new Exception("noooo");
+                }
+                for (var i = 0; i < count; ++i) {
+                    var key = keys[i];
+                    table[key] = key;
+                }
+                if (table.Count != count) {
+                    throw new Exception("noooo");
+                }
+                for (var i = 0; i < count; ++i) {
+                    var key = keys[i];
+                    if (table[key] != key) {
+                        throw new Exception("noooo");
+                    }
+                }
+                watch.Stop();
+                Console.WriteLine("Hopscotch time: " + (watch.ElapsedMilliseconds / 1000.0));
+            }*/
         }
         
         protected override void Initialize()
