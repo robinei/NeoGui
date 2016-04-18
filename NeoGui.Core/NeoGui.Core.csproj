@@ -43,10 +43,11 @@
     <Compile Include="NeoGuiContext.cs" />
     <Compile Include="DrawContext.cs" />
     <Compile Include="INeoGuiDelegate.cs" />
+    <Compile Include="StateDomain.cs" />
+    <Compile Include="Util.cs" />
     <Compile Include="Vec2.cs" />
     <Compile Include="DrawCommand.cs" />
     <Compile Include="Element.cs" />
-    <Compile Include="ElementId.cs" />
     <Compile Include="KeyedValue.cs" />
     <Compile Include="Pair.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

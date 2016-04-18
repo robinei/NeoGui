@@ -49,9 +49,10 @@ namespace NeoGui.Toolkit
             Element parent, 
             ScrollAreaFlags flags = ScrollAreaFlags.BounceX | ScrollAreaFlags.BounceY,
             Func<Element, Element> contentCreator = null,
-            object key = null)
+            object key = null,
+            StateDomain domain = null)
         {
-            var scrollArea = Element.Create(parent, key);
+            var scrollArea = Element.Create(parent, key, domain);
             scrollArea.ClipContent = true;
             scrollArea.Layout = Layout;
             scrollArea.OnInserted(OnInserted);

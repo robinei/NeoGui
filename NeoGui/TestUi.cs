@@ -20,6 +20,7 @@ namespace NeoGui
         }
 
         private static bool panelVisible = true;
+        private static StateDomain panelStateDomain;
 
         private static bool switchValue;
 
@@ -32,18 +33,24 @@ namespace NeoGui
         {
             ui.BeginFrame();
 
+            if (panelStateDomain == null) {
+                panelStateDomain = ui.CreateStateDomain();
+            }
+
             var root = ui.Root;
             root.Rect = new Rect(0, 0, windowWidth, windowHeight);
             Panel.AddProps(root);
 
             var toggleButton = TextButton.Create(root, "Toggle", e => {
                 panelVisible = !panelVisible;
+                if (!panelVisible) {
+                    panelStateDomain.Reset();
+                }
             });
             toggleButton.Rect = new Rect(70, 40, 100, 30);
 
             if (panelVisible) {
-                var panel = Panel.Create(root, Color.LightGray, PanelKey);
-                panel.AttachStateHolder();
+                var panel = Panel.Create(root, Color.LightGray, PanelKey, panelStateDomain);
                 panel.Rect = new Rect(70, 80, 400, 600);
                 panel.ClipContent = true;
                 

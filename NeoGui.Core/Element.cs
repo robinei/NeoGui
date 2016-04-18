@@ -14,18 +14,16 @@ namespace NeoGui.Core
         {
             Debug.Assert(context != null);
             Debug.Assert(index >= 0);
-            Debug.Assert(index < context.AttrId.Length);
+            Debug.Assert(index < context.ElementCount);
             Context = context;
             Index = index;
         }
 
-        public static Element Create(Element parent, object key = null)
+        public static Element Create(Element parent, object key = null, StateDomain domain = null)
         {
-            return parent.Context.CreateElement(parent, key);
+            return parent.Context.CreateElement(parent, key, domain);
         }
         
-        public ElementId Id => Context.AttrId[Index];
-        public object Key => Id.Key;
         public bool IsRoot => Index == 0;
         public Element Parent => new Element(Context, Context.AttrParent[Index]);
         public Element FirstChild => new Element(Context, Context.AttrFirstChild[Index]);
@@ -74,24 +72,20 @@ namespace NeoGui.Core
 
         public bool HasState<TState>()
         {
-            return Context.AttrStateHolder[Index].HasValue<TState>(Context.AttrId[Index]);
+            return Context.AttrStateDomain[Index].Storage.HasValue<TState>(Context.AttrStateId[Index]);
         }
         public TState GetState<TState>(TState defaultValue = default(TState))
         {
-            return Context.AttrStateHolder[Index].GetValue(Context.AttrId[Index], defaultValue);
+            return Context.AttrStateDomain[Index].Storage.GetValue(Context.AttrStateId[Index], defaultValue);
         }
         public TState GetOrCreateState<TState>()
             where TState: new()
         {
-            return Context.AttrStateHolder[Index].GetOrCreateValue<TState>(Context.AttrId[Index]);
+            return Context.AttrStateDomain[Index].Storage.GetOrCreateValue<TState>(Context.AttrStateId[Index]);
         }
         public void SetState<TState>(TState value)
         {
-            Context.AttrStateHolder[Index].SetValue(Context.AttrId[Index], value);
-        }
-        public void AttachStateHolder()
-        {
-            Context.AttachStateHolder(Index);
+            Context.AttrStateDomain[Index].Storage.SetValue(Context.AttrStateId[Index], value);
         }
         public TState FindState<TState>(TState defaultValue = default(TState))
         {

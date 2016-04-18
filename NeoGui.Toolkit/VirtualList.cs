@@ -5,9 +5,15 @@ namespace NeoGui.Toolkit
 {
     public static class VirtualList
     {
-        public static Element Create(Element parent, int itemCount, float itemHeight, Func<Element, int, Element> createItem, object key = null)
+        public static Element Create(
+            Element parent,
+            int itemCount,
+            float itemHeight,
+            Func<Element, int, Element> createItem,
+            object key = null,
+            StateDomain domain = null)
         {
-            var virtualList = ScrollArea.Create(parent, ScrollAreaFlags.BounceY | ScrollAreaFlags.FillX, key: key);
+            var virtualList = ScrollArea.Create(parent, ScrollAreaFlags.BounceY | ScrollAreaFlags.FillX, key: key, domain: domain);
             virtualList.Layout = Layout;
             
             var state = virtualList.GetOrCreateState<ScrollAreaState>();
