@@ -17,12 +17,12 @@ namespace NeoGui.Core
         {
             get
             {
-                Debug.Assert(i == 0 || i == 1);
+                Debug.Assert(i >= 0 && i < 2);
                 return i == 0 ? X : Y;
             }
             set
             {
-                Debug.Assert(i == 0 || i == 1);
+                Debug.Assert(i >= 0 && i < 2);
                 if (i == 0) {
                     X = value;
                 } else {
@@ -35,8 +35,9 @@ namespace NeoGui.Core
         public float SqrLength => X * X + Y * Y;
         public Vec2 Normalized => this * (1.0f / Length);
         public Vec2 Abs => new Vec2(Math.Abs(X), Math.Abs(Y));
-
-        public Vec2 EntrywiseProduct(Vec2 v) => new Vec2(X * v.X, Y * v.Y);
+        public Vec2 Inverse => new Vec2(1.0f / X, 1.0f / Y);
+        public float Angle(Vec2 v) => (float)Math.Acos(Dot(v) / (Length * v.Length));
+        public float Dot(Vec2 v) => X * v.X + Y * v.Y;
 
         public static Vec2 operator +(Vec2 a, Vec2 b) => new Vec2(a.X + b.X, a.Y + b.Y);
         public static Vec2 operator -(Vec2 a, Vec2 b) => new Vec2(a.X - b.X, a.Y - b.Y);
