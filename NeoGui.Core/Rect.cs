@@ -49,6 +49,10 @@ namespace NeoGui.Core
             Size = new Vec2(width, height);
         }
 
+        public Vec2 Center => Pos + Size * 0.5f;
+        public Vec2 Min => Pos;
+        public Vec2 Max => Pos + Size;
+
         public bool Contains(Vec2 p) => !(p.X < X || p.Y < Y || p.X > X + Width || p.Y > Y + Height);
 
         public bool Intersects(Rect r)

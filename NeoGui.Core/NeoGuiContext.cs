@@ -66,6 +66,9 @@ namespace NeoGui.Core
         internal int[] AttrLevel = new int[InitialArraySize];
         internal int[] AttrZIndex = new int[InitialArraySize];
         internal ElementFlags[] AttrFlags = new ElementFlags[InitialArraySize];
+        internal Transform[] AttrTransform = new Transform[InitialArraySize];
+        internal Transform[] AttrWorldTransform = new Transform[InitialArraySize];
+        internal Vec2[] AttrOrigin = new Vec2[InitialArraySize];
         internal Rect[] AttrRect = new Rect[InitialArraySize];
         internal Rect[] AttrAbsRect = new Rect[InitialArraySize]; // absolute coordinates
         internal Rect[] AttrClipRect = new Rect[InitialArraySize];
@@ -134,6 +137,9 @@ namespace NeoGui.Core
                 Array.Resize(ref AttrLevel, newLength);
                 Array.Resize(ref AttrZIndex, newLength);
                 Array.Resize(ref AttrFlags, newLength);
+                Array.Resize(ref AttrTransform, newLength);
+                Array.Resize(ref AttrWorldTransform, newLength);
+                Array.Resize(ref AttrOrigin, newLength);
                 Array.Resize(ref AttrRect, newLength);
                 Array.Resize(ref AttrAbsRect, newLength);
                 Array.Resize(ref AttrClipRect, newLength);
@@ -165,7 +171,11 @@ namespace NeoGui.Core
             AttrLevel[ElementCount] = AttrLevel[parent.Index] + 1;
             AttrZIndex[ElementCount] = 0;
             AttrFlags[ElementCount] = 0;
+            AttrTransform[ElementCount].MakeIdentity();
+            AttrWorldTransform[ElementCount].MakeIdentity();
+            AttrOrigin[ElementCount] = new Vec2();
             AttrRect[ElementCount] = new Rect();
+            AttrAbsRect[ElementCount] = new Rect();
             AttrDrawFunc[ElementCount] = null;
             AttrMeasureFunc[ElementCount] = null;
             AttrLayoutFunc[ElementCount] = null;
@@ -199,6 +209,11 @@ namespace NeoGui.Core
 
         private void CalcRects()
         {
+            AttrWorldTransform[0] = AttrTransform[0];
+            for (var i = 1; i < ElementCount; ++i) {
+                AttrWorldTransform[i].Product(ref AttrWorldTransform[AttrParent[i]], ref AttrTransform[i]);
+            }
+
             // we know parents come before children, so it's OK to just iterate like this and refer back to parents
             AttrAbsRect[0] = AttrRect[0];
             for (var i = 1; i < ElementCount; ++i) {
@@ -230,17 +245,6 @@ namespace NeoGui.Core
                         new Pair<int, int>(AttrZIndex[i], AttrLevel[i]), i));
             }
             bottomToTopIndex.Sort();
-        }
-        
-        public Element? HitTest(Vec2 absPos)
-        {
-            for (var i = bottomToTopIndex.Count - 1; i >= 0; --i) {
-                var elemIndex = bottomToTopIndex[i].Value;
-                if (AttrAbsRect[elemIndex].Contains(absPos)) {
-                    return new Element(this, elemIndex);
-                }
-            }
-            return null;
         }
         
 

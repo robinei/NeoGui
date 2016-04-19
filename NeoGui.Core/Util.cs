@@ -1,4 +1,6 @@
 ﻿
+using System;
+
 namespace NeoGui.Core
 {
     internal static class Util
@@ -8,6 +10,11 @@ namespace NeoGui.Core
             unchecked {
                 return ((long)a << 32) | (uint)b;
             }
+        }
+
+        public static float Clamp(float val, float min, float max)
+        {
+            return val < min ? min : (val > max ? max : val);
         }
     }
 }

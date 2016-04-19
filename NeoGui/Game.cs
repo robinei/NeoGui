@@ -15,6 +15,7 @@ namespace NeoGui
         private readonly RasterizerState rasterizerState = new RasterizerState {ScissorTestEnable = true};
         private RenderTarget2D renderTarget;
         private SpriteBatch spriteBatch;
+        private BasicEffect basicEffect;
         private SpriteFont font;
         private Texture2D pixel;
         
@@ -41,6 +42,16 @@ namespace NeoGui
             graphics.SynchronizeWithVerticalRetrace = false;
             IsFixedTimeStep = false;
             Content.RootDirectory = "Content";
+
+            var trans = new Transform();
+            trans.MakeIdentity();
+            //trans.Translation.X += 10;
+            trans.Rotation = Quat.FromAxisAngle(1, 0, 0, (float)Math.PI);
+            trans.Rotation = Quat.FromEulerAngles(0, (float)Math.PI, 0);
+
+            var v1 = new Vec3(1, 0, 0);
+            var v2 = trans.ApplyForward(v1);
+            Debug.WriteLine("v2: " + v2);
         }
         
         protected override void Initialize()
@@ -62,7 +73,10 @@ namespace NeoGui
         {
             spriteBatch = new SpriteBatch(GraphicsDevice);
             font = Content.Load<SpriteFont>("Arial");
-
+            basicEffect = new BasicEffect(GraphicsDevice) {
+                TextureEnabled = true,
+                VertexColorEnabled = true
+            };
             pixel = new Texture2D(GraphicsDevice, 1, 1);
             pixel.SetData(new [] { Color.White });
 
@@ -120,8 +134,12 @@ namespace NeoGui
         private void DrawUi()
         {
             GraphicsDevice.SetRenderTarget(renderTarget);
- 
-            spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, null, null, rasterizerState);
+
+            var viewport = GraphicsDevice.Viewport;
+            basicEffect.Projection = Matrix.CreateTranslation(-0.5f, -0.5f, 0) * 
+                             Matrix.CreateOrthographicOffCenter(0, viewport.Width, viewport.Height, 0, 0, 1);
+
+            spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, null, null, rasterizerState, basicEffect);
             foreach (var buffer in ui.DirtyDrawCommandBuffers) {
                 var prevClipRect = Rect.Empty;
                 for (var i = 0; i < buffer.Count; ++i) {

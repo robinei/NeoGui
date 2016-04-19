@@ -161,6 +161,12 @@ namespace NeoGui.Core
             get { return Context.AttrZIndex[Index]; }
             set { Context.AttrZIndex[Index] = value; }
         }
+        public Transform Transform
+        {
+            get { return Context.AttrTransform[Index]; }
+            set { Context.AttrTransform[Index] = value; }
+        }
+        public Transform WorldTransform => Context.AttrWorldTransform[Index];
         public float X
         {
             get { return Context.AttrRect[Index].X; }
