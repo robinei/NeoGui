@@ -31,7 +31,7 @@ namespace NeoGui.Core
         public bool HasChildren => Context.AttrFirstChild[Index] > 0;
         public bool HasNextSibling => Context.AttrNextSibling[Index] > 0;
 
-        public bool IsUnderMouse => AbsoluteRect.Contains(Context.Input.MousePos) &&
+        public bool IsUnderMouse => Rect.Contains(WorldTransform.ApplyInverse(new Vec3(Context.Input.MousePos)).XY + Pos) &&
                                     ClipRect.Contains(Context.Input.MousePos);
 
 
@@ -101,15 +101,6 @@ namespace NeoGui.Core
             }
         }
         
-        
-        public float ToLocalScale(float f) // pos assumed to be in absolute coordinates
-        {
-            return f; // TODO: change this impl when scaling is added
-        }
-        public float ToLocalScale(float f, Element sourceCoordSys)
-        {
-            return f; // TODO: change this impl when scaling is added
-        }
 
         public Vec2 ToLocalCoord(Vec2 pos) // pos assumed to be in absolute coordinates
         {
@@ -118,15 +109,6 @@ namespace NeoGui.Core
         public Vec2 ToLocalCoord(Vec2 pos, Element sourceCoordSys)
         {
             return pos + (Context.AttrAbsRect[sourceCoordSys.Index].Pos - Context.AttrAbsRect[Index].Pos);
-        }
-
-        public Rect ToLocalCoord(Rect rect) // rect assumed to be in absolute coordinates
-        {
-            return rect + (Context.AttrAbsRect[0].Pos - Context.AttrAbsRect[Index].Pos);
-        }
-        public Rect ToLocalCoord(Rect rect, Element sourceCoordSys)
-        {
-            return rect + (Context.AttrAbsRect[sourceCoordSys.Index].Pos - Context.AttrAbsRect[Index].Pos);
         }
 
 

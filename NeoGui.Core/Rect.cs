@@ -76,6 +76,7 @@ namespace NeoGui.Core
         }
 
         public static Rect operator +(Rect r, Vec2 v) => new Rect(r.Pos + v, r.Size);
+        public static Rect operator -(Rect r, Vec2 v) => new Rect(r.Pos - v, r.Size);
         public static Rect operator +(Vec2 v, Rect r) => new Rect(v + r.Pos, r.Size);
 
         public override string ToString() => $"Rect({X}, {Y}, {Width}, {Height})";

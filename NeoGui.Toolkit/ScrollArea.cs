@@ -126,14 +126,13 @@ namespace NeoGui.Toolkit
                     state.IsDragging = false;
                 } else {
                     // apply the whole DragRemainder
-                    var scale = scrollArea.ToLocalScale(1.0f);
-                    var pos = state.OrigPos + input.DragRemainder * scale;
+                    var pos = state.OrigPos + input.DragRemainder;
                 
                     // move pos back if we went out of bounds
                     pos = ClampToBounds(pos, content.Size, scrollArea.Size);
                     
                     state.DragWanted = input.DragRemainder;
-                    var dragUsed = (pos - state.OrigPos) / scale;
+                    var dragUsed = (pos - state.OrigPos);
 
                     // subtract the part of the DragRemainder that we "used".
                     // what's left can be "used" by someone further up the hierarchy

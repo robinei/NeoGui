@@ -119,40 +119,40 @@ namespace NeoGui.Core
             return new Quat(d + (float)Math.Sqrt(from.SqrLength * to.SqrLength), c).Normalized;
         }
 
-        public void ToMatrix(float[] m)
+        public void ToMatrix(ref Mat4 m)
         {
-            var x2  = 2.0f*X;
-            var y2  = 2.0f*Y;
-            var z2  = 2.0f*Z;
-            var x2W = x2*W;
-            var y2W = y2*W;
-            var z2W = z2*W;
-            var x2X = x2*X;
-            var y2X = y2*X;
-            var z2X = z2*X;
-            var y2Y = y2*Y;
-            var z2Y = z2*Y;
-            var z2Z = z2*Y;
+            var x2  = 2.0f * X;
+            var y2  = 2.0f * Y;
+            var z2  = 2.0f * Z;
+            var xw2 = x2 * W;
+            var yw2 = y2 * W;
+            var zw2 = z2 * W;
+            var xx2 = x2 * X;
+            var xy2 = y2 * X;
+            var xz2 = z2 * X;
+            var yy2 = y2 * Y;
+            var yz2 = z2 * Y;
+            var zz2 = z2 * Y;
 
-            m[0] = 1.0f-y2Y-z2Z;
-            m[1] = y2X+z2W;
-            m[2] = z2X-y2W;
-		    m[3] = 0.0f;
+            m.M00 = 1.0f - yy2 - zz2;
+            m.M10 = xy2 + zw2;
+            m.M20 = xz2 - yw2;
+            m.M30 = 0.0f;
 
-            m[4] = y2X-z2W;
-            m[5] = 1.0f-x2X-z2Z;
-            m[6] = z2Y+x2W;
-		    m[7] = 0.0f;
+            m.M01 = xy2 - zw2;
+            m.M11 = 1.0f - xx2 - zz2;
+            m.M21 = yz2 + xw2;
+            m.M31 = 0.0f;
 
-            m[8] = z2X+y2W;
-            m[9] = z2Y-x2W;
-            m[10] = 1.0f-x2X-y2Y;
-		    m[11] = 0.0f;
+            m.M02 = xz2 + yw2;
+            m.M12 = yz2 - xw2;
+            m.M22 = 1.0f - xx2 - yy2;
+            m.M32 = 0.0f;
 
-		    m[12] = 0.0f;
-		    m[13] = 0.0f;
-		    m[14] = 0.0f;
-		    m[15] = 1.0f;
+            m.M03 = 0.0f;
+            m.M13 = 0.0f;
+            m.M23 = 0.0f;
+            m.M33 = 1.0f;
         }
 
         public static readonly Quat Identity = new Quat(1, 0, 0, 0);

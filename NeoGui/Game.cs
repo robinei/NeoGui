@@ -46,12 +46,22 @@ namespace NeoGui
             var trans = new Transform();
             trans.MakeIdentity();
             //trans.Translation.X += 10;
+            trans.Scale = Vec3.UnitScale * 0.5f;
             trans.Rotation = Quat.FromAxisAngle(1, 0, 0, (float)Math.PI);
             trans.Rotation = Quat.FromEulerAngles(0, (float)Math.PI, 0);
 
             var v1 = new Vec3(1, 0, 0);
             var v2 = trans.ApplyForward(v1);
+
+            var m = new Mat4();
+            trans.ToMatrix(ref m);
+            var v3 = m.Mul(v1);
+
             Debug.WriteLine("v2: " + v2);
+            Debug.WriteLine("v3: " + v3);
+            
+            Debug.WriteLine("sizeof(Transform): " + Marshal.SizeOf(typeof(Transform)));
+            Debug.WriteLine("sizeof(Mat4): " + Marshal.SizeOf(typeof(Mat4)));
         }
         
         protected override void Initialize()

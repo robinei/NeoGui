@@ -40,6 +40,7 @@
     <Compile Include="Color.cs" />
     <Compile Include="DrawCommandBuffer.cs" />
     <Compile Include="InputContext.cs" />
+    <Compile Include="Mat4.cs" />
     <Compile Include="NeoGuiContext.cs" />
     <Compile Include="DrawContext.cs" />
     <Compile Include="INeoGuiDelegate.cs" />
@@ -56,6 +57,7 @@
     <Compile Include="Rect.cs" />
     <Compile Include="ValueStorage.cs" />
     <Compile Include="Vec3.cs" />
+    <Compile Include="Vec4.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

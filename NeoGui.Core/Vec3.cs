@@ -14,6 +14,20 @@ namespace NeoGui.Core
             Z = z;
         }
 
+        public Vec3(Vec2 v, float z = 0)
+        {
+            X = v.X;
+            Y = v.Y;
+            Z = z;
+        }
+
+        public Vec2 XY => new Vec2(X, Y);
+        public Vec2 XZ => new Vec2(X, Z);
+        public Vec2 YX => new Vec2(Y, X);
+        public Vec2 YZ => new Vec2(Y, Z);
+        public Vec2 ZX => new Vec2(Z, X);
+        public Vec2 ZY => new Vec2(Z, Y);
+
         public float this[int i]
         {
             get

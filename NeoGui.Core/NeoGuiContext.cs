@@ -211,7 +211,9 @@ namespace NeoGui.Core
         {
             AttrWorldTransform[0] = AttrTransform[0];
             for (var i = 1; i < ElementCount; ++i) {
-                AttrWorldTransform[i].Product(ref AttrWorldTransform[AttrParent[i]], ref AttrTransform[i]);
+                var local = AttrTransform[i];
+                local.Translation += new Vec3(AttrRect[i].Pos);
+                AttrWorldTransform[i].Product(ref AttrWorldTransform[AttrParent[i]], ref local);
             }
 
             // we know parents come before children, so it's OK to just iterate like this and refer back to parents
