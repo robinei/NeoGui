@@ -54,7 +54,7 @@ namespace NeoGui
             var v2 = trans.ApplyForward(v1);
 
             var m = new Mat4();
-            trans.ToMatrix(ref m);
+            trans.ToMatrix(out m);
             var v3 = m.Mul(v1);
 
             Debug.WriteLine("v2: " + v2);
@@ -62,6 +62,13 @@ namespace NeoGui
             
             Debug.WriteLine("sizeof(Transform): " + Marshal.SizeOf(typeof(Transform)));
             Debug.WriteLine("sizeof(Mat4): " + Marshal.SizeOf(typeof(Mat4)));
+
+            trans.MakeIdentity();
+            trans.Translation = new Vec3(1, 1, 0);
+            trans.ToMatrix(out m);
+
+            Debug.WriteLine("Mat0: " + Matrix.CreateTranslation(1, 1, 0));
+            Debug.WriteLine("Mat1: " + m);
         }
         
         protected override void Initialize()
@@ -140,30 +147,22 @@ namespace NeoGui
         {
             return ui.DirtyDrawCommandBuffers.Count > 0;
         }
-        
-        [StructLayout(LayoutKind.Explicit)]
-        private struct FilthyMatrixConverter
-        {
-            [FieldOffset(0)] public Matrix MonoGameMatrix;            
-            [FieldOffset(0)] public Mat4 NeoGuiMatrix;
-        }
 
         private void DrawUi()
         {
             GraphicsDevice.SetRenderTarget(renderTarget);
 
-            var depthState = new DepthStencilState();
+            /*var depthState = new DepthStencilState();
             depthState.DepthBufferEnable = false;
             depthState.DepthBufferWriteEnable = false;
             GraphicsDevice.DepthStencilState = depthState;
 
             var viewport = GraphicsDevice.Viewport;
             basicEffect.Projection = Matrix.CreateTranslation(-0.5f, -0.5f, 0) * 
-                             Matrix.CreateOrthographicOffCenter(0, viewport.Width, viewport.Height, 0, 0, 1);
+                             Matrix.CreateOrthographicOffCenter(0, viewport.Width, viewport.Height, 0, 0, 1);*/
 
-            var matConv = new FilthyMatrixConverter();
-
-            spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, null, null, rasterizerState, basicEffect);
+            //spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, null, null, rasterizerState, basicEffect);
+            spriteBatch.Begin(SpriteSortMode.Immediate, null, null, null, rasterizerState);
             foreach (var buffer in ui.DirtyDrawCommandBuffers) {
                 for (var i = 0; i < buffer.Count; ++i) {
                     var command = buffer[i];
@@ -172,9 +171,12 @@ namespace NeoGui
                         GraphicsDevice.ScissorRectangle = command.SetClipRect.ClipRect.ToMonoGameRectangle();
                         break;
                     case DrawCommandType.SetTransform:
-                        // this does not work:
-                        //command.SetTransform.Transform.ToMatrix(ref matConv.NeoGuiMatrix);
-                        //basicEffect.World = matConv.MonoGameMatrix;
+                        spriteBatch.End();
+                        Mat4 mat4;
+                        command.SetTransform.Transform.ToMatrix(out mat4);
+                        Matrix matrix;
+                        FromNeoGuiToMonoGameMatrix(out matrix, ref mat4);
+                        spriteBatch.Begin(SpriteSortMode.Immediate, null, null, null, rasterizerState, null, matrix);
                         break;
                     case DrawCommandType.SolidRect:
                         spriteBatch.Draw(pixel, command.SolidRect.Rect.ToMonoGameRectangle(), command.SolidRect.Color.ToMonoGameColor());
@@ -207,6 +209,30 @@ namespace NeoGui
             spriteBatch.DrawString(font, fps, new Vector2(4, 0), Color.Black);
             spriteBatch.End();
             base.Draw(gameTime);
+        }
+        
+
+        public static void FromNeoGuiToMonoGameMatrix(out Matrix b, ref Mat4 a)
+        {
+            b.M11 = a.M11;
+            b.M12 = a.M21;
+            b.M13 = a.M31;
+            b.M14 = a.M41;
+            
+            b.M21 = a.M12;
+            b.M22 = a.M22;
+            b.M23 = a.M32;
+            b.M24 = a.M42;
+            
+            b.M31 = a.M13;
+            b.M32 = a.M23;
+            b.M33 = a.M33;
+            b.M34 = a.M43;
+            
+            b.M41 = a.M14;
+            b.M42 = a.M24;
+            b.M43 = a.M34;
+            b.M44 = a.M44;
         }
     }
 }
