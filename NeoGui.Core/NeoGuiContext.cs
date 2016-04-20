@@ -264,12 +264,37 @@ namespace NeoGui.Core
 
             currDrawCommandBuffer.Clear();
             drawContext.CommandBuffer = currDrawCommandBuffer;
+            var prevClipRect = Rect.Empty;
             foreach (var entry in bottomToTopIndex) {
                 var elemIndex = entry.Value;
-                if (AttrDrawFunc[elemIndex] != null && AttrClipRect[elemIndex].Intersects(AttrAbsRect[elemIndex])) {
-                    drawContext.Target = new Element(this, elemIndex);
-                    AttrDrawFunc[elemIndex](drawContext);
+
+                if (AttrDrawFunc[elemIndex] == null) {
+                    continue;
                 }
+
+                var clipRect = AttrClipRect[elemIndex];
+                if (!clipRect.Intersects(AttrAbsRect[elemIndex])) {
+                    continue;
+                }
+
+                if ((clipRect.Pos - prevClipRect.Pos).SqrLength > 0 || (clipRect.Size - prevClipRect.Size).SqrLength > 0) {
+                    currDrawCommandBuffer.Add(new DrawCommand {
+                        Type = DrawCommandType.SetClipRect,
+                        SetClipRect = new SetClipRectCommand {
+                            ClipRect = clipRect
+                        }
+                    });
+                }
+
+                currDrawCommandBuffer.Add(new DrawCommand {
+                    Type = DrawCommandType.SetTransform,
+                    SetTransform = new SetTransformCommand {
+                        Transform = AttrWorldTransform[elemIndex]
+                    }
+                });
+                
+                drawContext.Target = new Element(this, elemIndex);
+                AttrDrawFunc[elemIndex](drawContext);
             }
 
             DirtyDrawCommandBuffers.Clear();

@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace NeoGui.Core
 {
     public class DrawContext
@@ -11,14 +9,10 @@ namespace NeoGui.Core
 
         public void SolidRect(Rect rect, Color color)
         {
-            var clipRect = Target.ClipRect;
-            rect = new Rect(Target.AbsoluteRect.Pos + rect.Pos, rect.Size);
-            if (!clipRect.Intersects(rect)) {
-                return;
-            }
+            rect = new Rect(Target.WorldTransform.ApplyForward(new Vec3(rect.Pos)).XY, rect.Size);
+            //rect = new Rect(Target.AbsoluteRect.Pos + rect.Pos, rect.Size);
             CommandBuffer.Add(new DrawCommand {
                 Type = DrawCommandType.SolidRect,
-                ClipRect = clipRect,
                 SolidRect = new SolidRectCommand {
                     Rect = rect,
                     Color = color
@@ -28,15 +22,10 @@ namespace NeoGui.Core
 
         public void Text(Vec2 pos, string text, Color color, int fontId = 0)
         {
-            var clipRect = Target.ClipRect;
-            pos += Target.AbsoluteRect.Pos;
-            // conservatively assume that the label can be some big size
-            if (!clipRect.Intersects(new Rect(pos.X, pos.Y, 1000, 200))) {
-                return;
-            }
+            pos = Target.WorldTransform.ApplyForward(new Vec3(pos)).XY;
+            //pos += Target.AbsoluteRect.Pos;
             CommandBuffer.Add(new DrawCommand {
                 Type = DrawCommandType.Text,
-                ClipRect = clipRect,
                 Text = new TextCommand {
                     Vec2 = pos,
                     StringId = Context.InternString(text),

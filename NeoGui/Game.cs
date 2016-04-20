@@ -140,29 +140,44 @@ namespace NeoGui
         {
             return ui.DirtyDrawCommandBuffers.Count > 0;
         }
+        
+        [StructLayout(LayoutKind.Explicit)]
+        private struct FilthyMatrixConverter
+        {
+            [FieldOffset(0)] public Matrix MonoGameMatrix;            
+            [FieldOffset(0)] public Mat4 NeoGuiMatrix;
+        }
 
         private void DrawUi()
         {
             GraphicsDevice.SetRenderTarget(renderTarget);
 
+            var depthState = new DepthStencilState();
+            depthState.DepthBufferEnable = false;
+            depthState.DepthBufferWriteEnable = false;
+            GraphicsDevice.DepthStencilState = depthState;
+
             var viewport = GraphicsDevice.Viewport;
             basicEffect.Projection = Matrix.CreateTranslation(-0.5f, -0.5f, 0) * 
                              Matrix.CreateOrthographicOffCenter(0, viewport.Width, viewport.Height, 0, 0, 1);
 
+            var matConv = new FilthyMatrixConverter();
+
             spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, null, null, rasterizerState, basicEffect);
             foreach (var buffer in ui.DirtyDrawCommandBuffers) {
-                var prevClipRect = Rect.Empty;
                 for (var i = 0; i < buffer.Count; ++i) {
                     var command = buffer[i];
-                    var clipRect = command.ClipRect;
-                    if ((clipRect.Pos - prevClipRect.Pos).SqrLength > 0 || (clipRect.Size - prevClipRect.Size).SqrLength > 0) {
-                        GraphicsDevice.ScissorRectangle = clipRect.ToMonoGameRectangle();
-                    }
                     switch (command.Type) {
+                    case DrawCommandType.SetClipRect:
+                        GraphicsDevice.ScissorRectangle = command.SetClipRect.ClipRect.ToMonoGameRectangle();
+                        break;
+                    case DrawCommandType.SetTransform:
+                        // this does not work:
+                        //command.SetTransform.Transform.ToMatrix(ref matConv.NeoGuiMatrix);
+                        //basicEffect.World = matConv.MonoGameMatrix;
+                        break;
                     case DrawCommandType.SolidRect:
                         spriteBatch.Draw(pixel, command.SolidRect.Rect.ToMonoGameRectangle(), command.SolidRect.Color.ToMonoGameColor());
-                        break;
-                    case DrawCommandType.GradientRect:
                         break;
                     case DrawCommandType.TexturedRect:
                         break;
