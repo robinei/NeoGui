@@ -21,7 +21,7 @@ namespace NeoGui.Core
 
         public void GetAxes(out Vec3 ax, out Vec3 ay, out Vec3 az)
         {
-            var m = new Mat4();
+            Mat4 m;
 		    Rotation.Conjugate.ToMatrix(out m);
 		    ax = new Vec3(m.M11, m.M12, m.M13);
 		    ay = new Vec3(m.M21, m.M22, m.M23);

@@ -31,8 +31,7 @@ namespace NeoGui.Core
         public bool HasChildren => Context.AttrFirstChild[Index] > 0;
         public bool HasNextSibling => Context.AttrNextSibling[Index] > 0;
 
-        public bool IsUnderMouse => Rect.Contains(WorldTransform.ApplyInverse(new Vec3(Context.Input.MousePos)).XY + Pos) &&
-                                    ClipRect.Contains(Context.Input.MousePos);
+        public bool IsUnderMouse => Rect.Contains(ToLocalCoord(Context.Input.MousePos));// && ClipRect.Contains(Context.Input.MousePos);
 
 
         public void OnDepthDescent(Action<Element> handler) { Context.AddDepthDescentHandler(Index, handler); }
@@ -102,13 +101,14 @@ namespace NeoGui.Core
         }
         
 
-        public Vec2 ToLocalCoord(Vec2 pos) // pos assumed to be in absolute coordinates
+        public Vec2 ToLocalCoord(Vec2 worldPos)
         {
-            return pos + (Context.AttrAbsRect[0].Pos - Context.AttrAbsRect[Index].Pos);
+            return Pos + Context.AttrWorldTransform[Index].ApplyInverse(new Vec3(worldPos)).XY;
         }
         public Vec2 ToLocalCoord(Vec2 pos, Element sourceCoordSys)
         {
-            return pos + (Context.AttrAbsRect[sourceCoordSys.Index].Pos - Context.AttrAbsRect[Index].Pos);
+            var worldPos = Context.AttrWorldTransform[sourceCoordSys.Index].ApplyForward(new Vec3(pos - sourceCoordSys.Pos));
+            return ToLocalCoord(worldPos.XY);
         }
 
 
