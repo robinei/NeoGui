@@ -62,6 +62,7 @@ namespace NeoGui.Toolkit
 
             var content = contentCreator?.Invoke(scrollArea) ?? Element.Create(scrollArea);
             content.Name = "ScrollArea.Content";
+            content.ClipContent = true;
 
             var overlay = Element.Create(scrollArea);
             overlay.Name = "ScrollArea.Overlay";
@@ -112,9 +113,7 @@ namespace NeoGui.Toolkit
 
             state.ClientSize = scrollArea.Size;
 
-            if (input.DidDragStart() && !scrollArea.Disabled &&
-                scrollArea.AbsoluteRect.Contains(input.TrueDragOrigin) &&
-                scrollArea.ClipRect.Contains(input.TrueDragOrigin)) {
+            if (input.DidDragStart() && !scrollArea.Disabled && scrollArea.HitTest(input.TrueDragOrigin)) {
                 state.IsDragging = true;
                 state.Mode[0] = ScrollAreaAxisMode.Drag;
                 state.Mode[1] = ScrollAreaAxisMode.Drag;

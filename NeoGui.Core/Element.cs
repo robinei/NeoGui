@@ -31,7 +31,8 @@ namespace NeoGui.Core
         public bool HasChildren => Context.AttrFirstChild[Index] > 0;
         public bool HasNextSibling => Context.AttrNextSibling[Index] > 0;
 
-        public bool IsUnderMouse => Rect.Contains(ToLocalCoord(Context.Input.MousePos));// && ClipRect.Contains(Context.Input.MousePos);
+        public bool IsUnderMouse => HitTest(Context.Input.MousePos);
+        public bool HitTest(Vec2 p) => ClipRect.Contains(p) && new Rect(Size).Contains(ToLocalCoord(p));
 
 
         public void OnDepthDescent(Action<Element> handler) { Context.AddDepthDescentHandler(Index, handler); }
@@ -101,15 +102,8 @@ namespace NeoGui.Core
         }
         
 
-        public Vec2 ToLocalCoord(Vec2 worldPos)
-        {
-            return Pos + Context.AttrWorldTransform[Index].ApplyInverse(new Vec3(worldPos)).XY;
-        }
-        public Vec2 ToLocalCoord(Vec2 pos, Element sourceCoordSys)
-        {
-            var worldPos = Context.AttrWorldTransform[sourceCoordSys.Index].ApplyForward(new Vec3(pos - sourceCoordSys.Pos));
-            return ToLocalCoord(worldPos.XY);
-        }
+        public Vec2 ToLocalCoord(Vec2 worldPos) => Context.AttrWorldTransform[Index].ApplyInverse(new Vec3(worldPos)).XY;
+        public Vec2 ToWorldCoord(Vec2 localPos) => Context.AttrWorldTransform[Index].ApplyForward(new Vec3(localPos)).XY;
 
 
         #region Misc forwarded properties
@@ -148,6 +142,26 @@ namespace NeoGui.Core
             get { return Context.AttrTransform[Index]; }
             set { Context.AttrTransform[Index] = value; }
         }
+        public Vec3 Pivot
+        {
+            get { return Context.AttrTransform[Index].Pivot; }
+            set { Context.AttrTransform[Index].Pivot = value; }
+        }
+        public Quat Rotation
+        {
+            get { return Context.AttrTransform[Index].Rotation; }
+            set { Context.AttrTransform[Index].Rotation = value; }
+        }
+        public Vec3 Translation
+        {
+            get { return Context.AttrTransform[Index].Translation; }
+            set { Context.AttrTransform[Index].Translation = value; }
+        }
+        public Vec3 Scale
+        {
+            get { return Context.AttrTransform[Index].Scale; }
+            set { Context.AttrTransform[Index].Scale = value; }
+        }
         public Transform WorldTransform => Context.AttrWorldTransform[Index];
         public float X
         {
@@ -184,10 +198,7 @@ namespace NeoGui.Core
             get { return Context.AttrRect[Index].Size; }
             set { Context.AttrRect[Index].Size = value; }
         }
-
-        public Rect AbsoluteRect => Context.AttrAbsRect[Index];
         public Rect ClipRect => Context.AttrClipRect[Index];
-
         public Action<DrawContext> Draw
         {
             get { return Context.AttrDrawFunc[Index]; }

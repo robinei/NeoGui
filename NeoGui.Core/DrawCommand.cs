@@ -86,7 +86,8 @@ namespace NeoGui.Core
                    a.cmp._16 == b.cmp._16 &&
                    a.cmp._24 == b.cmp._24 &&
                    a.cmp._32 == b.cmp._32 &&
-                   a.cmp._40 == b.cmp._40;
+                   a.cmp._40 == b.cmp._40 &&
+                   a.cmp._48 == b.cmp._48;
         }
 
         private struct ComparisonHelper
@@ -99,6 +100,7 @@ namespace NeoGui.Core
             public long _24;
             public long _32;
             public long _40;
+            public long _48;
             // ReSharper restore InconsistentNaming
 #pragma warning restore 649
         }

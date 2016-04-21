@@ -4,16 +4,18 @@ namespace NeoGui.Core
 {
     public struct Transform
     {
+        public Vec3 Pivot;
         public Quat Rotation;
         public Vec3 Translation;
         public Vec3 Scale;
 
-        public Vec3 ApplyForward(Vec3 v) => Rotation * (Scale * v) + Translation;
+        public Vec3 ApplyForward(Vec3 v) => Rotation * (Scale * (v - Pivot)) + Translation + Pivot;
 
-        public Vec3 ApplyInverse(Vec3 v) => Scale.Inverse * (Rotation.Conjugate * (v - Translation));
+        public Vec3 ApplyInverse(Vec3 v) => (Scale.Inverse * (Rotation.Conjugate * (v - Pivot - Translation))) + Pivot;
 
         public void Product(ref Transform a, ref Transform b)
         {
+            Pivot = b.Pivot;
             Rotation = a.Rotation * b.Rotation;
             Scale = a.Scale * b.Scale;
             Translation = a.ApplyForward(b.Translation);
@@ -30,6 +32,7 @@ namespace NeoGui.Core
 
         public void MakeIdentity()
         {
+            Pivot = Vec3.Zero;
             Rotation = Quat.Identity;
             Translation = Vec3.Zero;
             Scale = Vec3.UnitScale;
@@ -47,20 +50,20 @@ namespace NeoGui.Core
         {
             Rotation.ToMatrix(out m);
 
-            m.M14 = (m.M11 * Scale.X * Translation.X) + (m.M12 * Scale.X * Translation.Y) + (m.M13 * Scale.X * Translation.Z);
-            m.M24 = (m.M21 * Scale.Y * Translation.X) + (m.M22 * Scale.Y * Translation.Y) + (m.M23 * Scale.Y * Translation.Z);
-            m.M34 = (m.M31 * Scale.Z * Translation.X) + (m.M32 * Scale.Z * Translation.Y) + (m.M33 * Scale.Z * Translation.Z);
+            m.M14 = -(m.M11 * Pivot.X * Scale.X) - (m.M12 * Pivot.Y * Scale.Y) - (m.M13 * Pivot.Z * Scale.Z) + Pivot.X + Translation.X;
+            m.M24 = -(m.M21 * Pivot.X * Scale.X) - (m.M22 * Pivot.Y * Scale.Y) - (m.M23 * Pivot.Z * Scale.Z) + Pivot.Y + Translation.Y;
+            m.M34 = -(m.M31 * Pivot.X * Scale.X) - (m.M32 * Pivot.Y * Scale.Y) - (m.M33 * Pivot.Z * Scale.Z) + Pivot.Z + Translation.Z;
 
             m.M11 *= Scale.X;
-            m.M21 *= Scale.Y;
-            m.M31 *= Scale.Z;
+            m.M21 *= Scale.X;
+            m.M31 *= Scale.X;
             
-            m.M12 *= Scale.X;
+            m.M12 *= Scale.Y;
             m.M22 *= Scale.Y;
-            m.M32 *= Scale.Z;
+            m.M32 *= Scale.Y;
             
-            m.M13 *= Scale.X;
-            m.M23 *= Scale.Y;
+            m.M13 *= Scale.Z;
+            m.M23 *= Scale.Z;
             m.M33 *= Scale.Z;
         }
     }

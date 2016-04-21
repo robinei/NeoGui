@@ -47,11 +47,7 @@ namespace NeoGui
                     panelStateDomain.Reset();
                 }
             });
-            {
-                var trans = toggleButton.Transform;
-                trans.Scale = new Vec3(0.5f, 0.5f, 0);
-                toggleButton.Transform = trans;
-            }
+            toggleButton.Scale = new Vec3(0.5f, 0.5f, 0);
             toggleButton.Rect = new Rect(70, 40, 100, 30);
 
             if (panelVisible) {
@@ -142,11 +138,8 @@ namespace NeoGui
 
                     var button = TextButton.Create(contentPanel, "Hello", e => Debug.WriteLine("Hello"));
                     button.Rect = new Rect(10, 50, 100, 30);
-                    {
-                        var trans = button.Transform;
-                        trans.Rotation = Quat.FromEulerAngles(0, 0, (float)Math.Sin(ui.Input.Time));
-                        button.Transform = trans;
-                    }
+                    //button.Pivot = new Vec3(0, 0, 10);
+                    button.Rotation = Quat.FromAxisAngle(new Vec3(0, 1, 0).Normalized, (float)ui.Input.Time);
                     
                     var toggleLabel = Label.Create(contentPanel, "Toggle me:");
                     toggleLabel.Pos = new Vec2(10, 100);

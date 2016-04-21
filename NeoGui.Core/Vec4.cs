@@ -69,7 +69,7 @@ namespace NeoGui.Core
         public static Vec4 operator *(float f, Vec4 v) => new Vec4(f * v.X, f * v.Y, f * v.Z, f * v.W);
         public static Vec4 operator *(Vec4 a, Vec4 b) => new Vec4(a.X * b.X, a.Y * b.Y, a.Z * b.Z, a.W * b.W);
         public static Vec4 operator /(Vec4 a, Vec4 b) => new Vec4(a.X / b.X, a.Y / b.Y, a.Z / b.Z, a.W / b.W);
-        public static Vec4 operator /(Vec4 v, float f) => new Vec4(v.X / f, v.Y / f, v.Z / f, v.W / f);
+        public static Vec4 operator /(Vec4 v, float f) => v * (1.0f / f);
 
         public static readonly Vec4 Zero = new Vec4(0, 0, 0, 0);
         public static readonly Vec4 UnitScale = new Vec4(1, 1, 1, 1);

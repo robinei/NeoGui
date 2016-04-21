@@ -12,7 +12,14 @@ namespace NeoGui
     public class Game : Microsoft.Xna.Framework.Game, INeoGuiDelegate
     {
         private readonly GraphicsDeviceManager graphics;
-        private readonly RasterizerState rasterizerState = new RasterizerState {ScissorTestEnable = true};
+        private readonly RasterizerState rasterizerState = new RasterizerState {
+            ScissorTestEnable = true,
+            CullMode = CullMode.None
+        };
+        private readonly DepthStencilState depthStencilState = new DepthStencilState {
+            DepthBufferEnable = false,
+            DepthBufferWriteEnable = false
+        };
         private RenderTarget2D renderTarget;
         private SpriteBatch spriteBatch;
         private BasicEffect basicEffect;
@@ -152,17 +159,12 @@ namespace NeoGui
         {
             GraphicsDevice.SetRenderTarget(renderTarget);
 
-            /*var depthState = new DepthStencilState();
-            depthState.DepthBufferEnable = false;
-            depthState.DepthBufferWriteEnable = false;
-            GraphicsDevice.DepthStencilState = depthState;
-
-            var viewport = GraphicsDevice.Viewport;
+            /*var viewport = GraphicsDevice.Viewport;
             basicEffect.Projection = Matrix.CreateTranslation(-0.5f, -0.5f, 0) * 
                              Matrix.CreateOrthographicOffCenter(0, viewport.Width, viewport.Height, 0, 0, 1);*/
 
             //spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, null, null, rasterizerState, basicEffect);
-            spriteBatch.Begin(SpriteSortMode.Immediate, null, null, null, rasterizerState);
+            spriteBatch.Begin(SpriteSortMode.Immediate, null, SamplerState.AnisotropicClamp, depthStencilState, rasterizerState);
             foreach (var buffer in ui.DirtyDrawCommandBuffers) {
                 for (var i = 0; i < buffer.Count; ++i) {
                     var command = buffer[i];
@@ -176,7 +178,7 @@ namespace NeoGui
                         command.SetTransform.Transform.ToMatrix(out mat4);
                         Matrix matrix;
                         FromNeoGuiToMonoGameMatrix(out matrix, ref mat4);
-                        spriteBatch.Begin(SpriteSortMode.Immediate, null, null, null, rasterizerState, null, matrix);
+                        spriteBatch.Begin(SpriteSortMode.Immediate, null, SamplerState.AnisotropicClamp, depthStencilState, rasterizerState, null, matrix * Matrix.CreateScale(1, 1, 0));
                         break;
                     case DrawCommandType.SolidRect:
                         spriteBatch.Draw(pixel, command.SolidRect.Rect.ToMonoGameRectangle(), command.SolidRect.Color.ToMonoGameColor());

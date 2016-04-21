@@ -45,7 +45,7 @@ namespace NeoGui.Core
         public static Vec2 operator *(float f, Vec2 v) => new Vec2(f * v.X, f * v.Y);
         public static Vec2 operator *(Vec2 a, Vec2 b) => new Vec2(a.X * b.X, a.Y * b.Y);
         public static Vec2 operator /(Vec2 a, Vec2 b) => new Vec2(a.X / b.X, a.Y / b.Y);
-        public static Vec2 operator /(Vec2 v, float f) => new Vec2(v.X / f, v.Y / f);
+        public static Vec2 operator /(Vec2 v, float f) => v * (1.0f / f);
 
         public static readonly Vec2 Zero = new Vec2(0, 0);
 

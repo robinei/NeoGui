@@ -63,7 +63,7 @@ namespace NeoGui.Core
         public static Vec3 operator *(float f, Vec3 v) => new Vec3(f * v.X, f * v.Y, f * v.Z);
         public static Vec3 operator *(Vec3 a, Vec3 b) => new Vec3(a.X * b.X, a.Y * b.Y, a.Z * b.Z);
         public static Vec3 operator /(Vec3 a, Vec3 b) => new Vec3(a.X / b.X, a.Y / b.Y, a.Z / b.Z);
-        public static Vec3 operator /(Vec3 v, float f) => new Vec3(v.X / f, v.Y / f, v.Z / f);
+        public static Vec3 operator /(Vec3 v, float f) => v * (1.0f / f);
 
         public static readonly Vec3 Zero = new Vec3(0, 0, 0);
         public static readonly Vec3 UnitScale = new Vec3(1, 1, 1);

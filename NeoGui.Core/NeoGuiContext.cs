@@ -68,9 +68,8 @@ namespace NeoGui.Core
         internal ElementFlags[] AttrFlags = new ElementFlags[InitialArraySize];
         internal Transform[] AttrTransform = new Transform[InitialArraySize];
         internal Transform[] AttrWorldTransform = new Transform[InitialArraySize];
-        internal Vec2[] AttrOrigin = new Vec2[InitialArraySize];
         internal Rect[] AttrRect = new Rect[InitialArraySize];
-        internal Rect[] AttrAbsRect = new Rect[InitialArraySize]; // absolute coordinates
+        internal Rect[] AttrBoundingRect = new Rect[InitialArraySize]; // axis aligned bounding box in world coordinates
         internal Rect[] AttrClipRect = new Rect[InitialArraySize];
         internal Action<DrawContext>[] AttrDrawFunc = new Action<DrawContext>[InitialArraySize];
         internal Action<Element>[] AttrMeasureFunc = new Action<Element>[InitialArraySize];
@@ -116,7 +115,7 @@ namespace NeoGui.Core
             PropagateDisablement();
             MeasureElements();
             LayoutElements();
-            CalcRects();
+            CalcTransformsAndRects();
             CalcBottomToTopIndex();
             DrawElements();
         }
@@ -139,9 +138,8 @@ namespace NeoGui.Core
                 Array.Resize(ref AttrFlags, newLength);
                 Array.Resize(ref AttrTransform, newLength);
                 Array.Resize(ref AttrWorldTransform, newLength);
-                Array.Resize(ref AttrOrigin, newLength);
                 Array.Resize(ref AttrRect, newLength);
-                Array.Resize(ref AttrAbsRect, newLength);
+                Array.Resize(ref AttrBoundingRect, newLength);
                 Array.Resize(ref AttrClipRect, newLength);
                 Array.Resize(ref AttrDrawFunc, newLength);
                 Array.Resize(ref AttrMeasureFunc, newLength);
@@ -173,9 +171,8 @@ namespace NeoGui.Core
             AttrFlags[ElementCount] = 0;
             AttrTransform[ElementCount].MakeIdentity();
             AttrWorldTransform[ElementCount].MakeIdentity();
-            AttrOrigin[ElementCount] = new Vec2();
             AttrRect[ElementCount] = new Rect();
-            AttrAbsRect[ElementCount] = new Rect();
+            AttrBoundingRect[ElementCount] = new Rect();
             AttrDrawFunc[ElementCount] = null;
             AttrMeasureFunc[ElementCount] = null;
             AttrLayoutFunc[ElementCount] = null;
@@ -207,28 +204,35 @@ namespace NeoGui.Core
             }
         }
 
-        private void CalcRects()
+        private void CalcTransformsAndRects()
         {
-            AttrWorldTransform[0] = AttrTransform[0];
-            for (var i = 1; i < ElementCount; ++i) {
-                var local = AttrTransform[i];
-                local.Translation += new Vec3(AttrRect[i].Pos);
-                AttrWorldTransform[i].Product(ref AttrWorldTransform[AttrParent[i]], ref local);
-            }
-
             // we know parents come before children, so it's OK to just iterate like this and refer back to parents
-            AttrAbsRect[0] = AttrRect[0];
+            AttrWorldTransform[0] = AttrTransform[0];
+            AttrBoundingRect[0] = AttrRect[0];
+            AttrClipRect[0] = AttrBoundingRect[0];
             for (var i = 1; i < ElementCount; ++i) {
-                AttrAbsRect[i] = AttrRect[i];
-                AttrAbsRect[i].X += AttrAbsRect[AttrParent[i]].X;
-                AttrAbsRect[i].Y += AttrAbsRect[AttrParent[i]].Y;
-            }
+                var rect = AttrRect[i];
+                var local = AttrTransform[i];
+                if (local.Pivot.SqrLength <= 0) { // TODO: use another way to detect unchanged Pivot
+                    local.Pivot = new Vec3(rect.Size * 0.5f);
+                }
+                local.Translation += new Vec3(rect.Pos);
+                AttrWorldTransform[i].Product(ref AttrWorldTransform[AttrParent[i]], ref local);
 
-            AttrClipRect[0] = AttrAbsRect[0];
-            for (var i = 1; i < ElementCount; ++i) {
+                var e = new Element(this, i);
+                var p0 = e.ToWorldCoord(new Vec2(0, 0));
+                var p1 = e.ToWorldCoord(new Vec2(rect.Width, 0));
+                var p2 = e.ToWorldCoord(rect.Size);
+                var p3 = e.ToWorldCoord(new Vec2(0, rect.Height));
+                var minX = Math.Min(p0.X, Math.Min(p1.X, Math.Min(p2.X, p3.X)));
+                var minY = Math.Min(p0.Y, Math.Min(p1.Y, Math.Min(p2.Y, p3.Y)));
+                var maxX = Math.Max(p0.X, Math.Max(p1.X, Math.Max(p2.X, p3.X)));
+                var maxY = Math.Max(p0.Y, Math.Max(p1.Y, Math.Max(p2.Y, p3.Y)));
+                AttrBoundingRect[i] = new Rect(minX, minY, maxX - minX, maxY - minY);
+                
                 var parentClipRect = AttrClipRect[AttrParent[i]];
                 if (GetFlag(i, ElementFlags.ClipContent)) {
-                    AttrClipRect[i] = parentClipRect.Intersection(AttrAbsRect[i]);
+                    AttrClipRect[i] = parentClipRect.Intersection(AttrBoundingRect[i]);
                 } else {
                     AttrClipRect[i] = parentClipRect;
                 }
@@ -273,7 +277,7 @@ namespace NeoGui.Core
                 }
 
                 var clipRect = AttrClipRect[elemIndex];
-                if (!clipRect.Intersects(AttrAbsRect[elemIndex])) {
+                if (!clipRect.Intersects(AttrBoundingRect[elemIndex])) {
                     continue;
                 }
 

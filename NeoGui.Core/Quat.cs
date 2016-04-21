@@ -70,34 +70,37 @@ namespace NeoGui.Core
             return v + uv + uuv;
         }
 
-        public static Quat Slerp(Quat v0, Quat v1, float t) {
-            // v0 and v1 should be unit length or else
+        public static Quat Slerp(Quat q0, Quat q1, float t) {
+            // q0 and q1 should be unit length or else
             // something broken will happen.
 
             // Compute the cosine of the angle between the two vectors.
-            var d = v0.Dot(v1);
+            var d = q0.Dot(q1);
 
             if(d > 0.9995f) {
                 // If the inputs are too close for comfort, linearly interpolate
                 // and normalize the result.
-                return (v0 + (v1 - v0) * t).Normalized;
+                return (q0 + (q1 - q0) * t).Normalized;
             }
 
             d = Util.Clamp(d, -1.0f, 1.0f);     // Robustness: Stay within domain of acos()
             var theta0 = (float)Math.Acos(d);   // theta_0 = angle between input vectors
-            var theta = theta0*t;               // theta = angle between v0 and result 
+            var theta = theta0*t;               // theta = angle between q0 and result 
 
-            var v2 = (v1 - v0*d).Normalized;
+            var q2 = (q1 - q0*d).Normalized;
     
-            // { v0, v2 } is now an orthonormal basis
-            return v0 * (float)Math.Cos(theta) + v2 * (float)Math.Sin(theta);
+            // { q0, q2 } is now an orthonormal basis
+            return q0 * (float)Math.Cos(theta) + q2 * (float)Math.Sin(theta);
         }
         
         public static Quat FromEulerAngles(float x, float y, float z)
         {
-            var qx = new Quat((float)Math.Cos(x/2), (float)Math.Sin(x/2), 0, 0);
-            var qy = new Quat((float)Math.Cos(y/2), 0, (float)Math.Sin(y/2), 0);
-            var qz = new Quat((float)Math.Cos(z/2), 0, 0, (float)Math.Sin(z/2));
+            x *= 0.5f;
+            y *= 0.5f;
+            z *= 0.5f;
+            var qx = new Quat((float)Math.Cos(x), (float)Math.Sin(x), 0, 0);
+            var qy = new Quat((float)Math.Cos(y), 0, (float)Math.Sin(y), 0);
+            var qz = new Quat((float)Math.Cos(z), 0, 0, (float)Math.Sin(z));
             return qx * qy * qz;
         }
 
@@ -106,8 +109,8 @@ namespace NeoGui.Core
         public static Quat FromAxisAngle(float x, float y, float z, float angle)
         {
             angle *= 0.5f;
-            var temp = (float)Math.Sin(angle);
-            return new Quat((float)Math.Cos(angle), x * temp, y * temp, z * temp);
+            var sinAngle = (float)Math.Sin(angle);
+            return new Quat((float)Math.Cos(angle), x * sinAngle, y * sinAngle, z * sinAngle);
         }
 
         public static Quat FromAxisAngle(Vec3 axis, float angle) => FromAxisAngle(axis.X, axis.Y, axis.Z, angle);
