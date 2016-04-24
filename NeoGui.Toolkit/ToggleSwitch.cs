@@ -3,15 +3,10 @@ using NeoGui.Core;
 
 namespace NeoGui.Toolkit
 {
-    public struct ToogleSwitchOn
-    {
-        public bool Value;
-    }
-
     public class ToogleSwitchState
     {
-        public bool Inited;
-        public float Pos;
+        public float Pos, Start, Target;
+        public double T0, T1;
     }
 
     public static class ToggleSwitch
@@ -20,27 +15,36 @@ namespace NeoGui.Toolkit
         {
             var toggleSwitch = Element.Create(parent);
             ButtonBehavior.Add(toggleSwitch);
+            toggleSwitch.Size = new Vec2(36, 16);
             toggleSwitch.Draw = Draw;
+            toggleSwitch.OnDepthDescent(OnDepthDescent);
             if (onToggled != null) {
                 toggleSwitch.Set(new ButtonCallback { OnClick = onToggled });
             }
-            toggleSwitch.Set(new ToogleSwitchOn { Value = on });
-            toggleSwitch.OnDepthDescent(OnDepthDescent);
-            toggleSwitch.Rect = new Rect(36, 16);
+            var state = toggleSwitch.GetOrCreateState<ToogleSwitchState>();
+            var target = on ? 1f : 0f;
+            if (Math.Abs(target - state.Target) > 0.000001f) {
+                state.Start = state.Pos;
+                state.Target = target;
+                state.T0 = toggleSwitch.Context.Input.Time;
+                state.T1 = state.T0 + Math.Abs(state.Target - state.Pos) * 0.15;
+            }
             return toggleSwitch;
+        }
+
+        public static void OnInserted(Element toggleSwitch)
+        {
+            var state = toggleSwitch.GetOrCreateState<ToogleSwitchState>();
+            state.Pos = state.Target;
         }
 
         private static void OnDepthDescent(Element toggleSwitch)
         {
-            var input = toggleSwitch.Context.Input;
-            var on = toggleSwitch.Get<ToogleSwitchOn>().Value;
             var state = toggleSwitch.GetOrCreateState<ToogleSwitchState>();
-            if (!state.Inited) {
-                state.Pos = on ? 1.0f : 0.0f;
-                state.Inited = true;
+            if (Math.Abs(state.Target - state.Pos) > 0.000001f) {
+                var t = Util.NormalizeInInterval(toggleSwitch.Context.Input.Time, state.T0, state.T1);
+                state.Pos = state.Start + (state.Target - state.Start) * (float)t;
             }
-            var target = on ? 1.0f : 0.0f;
-            state.Pos += (target - state.Pos) * (float)(input.TimeDelta * 20.0);
         }
 
         public static void Draw(DrawContext dc)

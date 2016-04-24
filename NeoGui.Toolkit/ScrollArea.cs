@@ -222,8 +222,8 @@ namespace NeoGui.Toolkit
                     startPos = scrollArea.Size[axis] - content.Size[axis];
                     endPos = startPos + delta;
                 }
-                var t = NormalizeInInterval(input.Time, state.AnimTimeStart[axis], state.AnimTimeEnd[axis]);
-                t = 2 * Sigmoid(5 * t) - 0.986;
+                var t = Util.NormalizeInInterval(input.Time, state.AnimTimeStart[axis], state.AnimTimeEnd[axis]);
+                t = 2 * Util.Sigmoid(5 * t) - 0.986;
                 state.Pos[axis] = (float)(startPos + (endPos - startPos) * t);
                 if (t >= 1) {
                     state.AnimPosInfo[axis] = state.Pos[axis]; // start pos
@@ -241,8 +241,8 @@ namespace NeoGui.Toolkit
                         endPos = 0;
                     }
                 }
-                var t = NormalizeInInterval(input.Time, state.AnimTimeStart[axis], state.AnimTimeEnd[axis]);
-                t = 2 * Sigmoid(5 * t - 5) + 0.0001;
+                var t = Util.NormalizeInInterval(input.Time, state.AnimTimeStart[axis], state.AnimTimeEnd[axis]);
+                t = 2 * Util.Sigmoid(5 * t - 5) + 0.0001;
                 state.Pos[axis] = (float)(startPos + (endPos - startPos) * t);
                 if (t >= 1) {
                     state.Mode[axis] = ScrollAreaAxisMode.Idle;
@@ -290,13 +290,6 @@ namespace NeoGui.Toolkit
             }
             return pos;
         }
-
-        private static double NormalizeInInterval(double t, double start, double end)
-        {
-            return Math.Min(1, Math.Max(0, t - start) / (end - start));
-        }
-        
-        private static double Sigmoid(double t) => 1.0 / (1.0 + Math.Exp(-t));
 
         private static void DrawOverlay(DrawContext dc)
         {

@@ -3,7 +3,7 @@ using System;
 
 namespace NeoGui.Core
 {
-    internal static class Util
+    public static class Util
     {
         public static long TwoIntsToLong(int a, int b)
         {
@@ -16,5 +16,13 @@ namespace NeoGui.Core
         {
             return val < min ? min : (val > max ? max : val);
         }
+        
+
+        public static double NormalizeInInterval(double t, double start, double end)
+        {
+            return Math.Min(1, Math.Max(0, t - start) / (end - start));
+        }
+        
+        public static double Sigmoid(double t) => 1.0 / (1.0 + Math.Exp(-t));
     }
 }
