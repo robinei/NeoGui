@@ -204,7 +204,7 @@ namespace NeoGui
                         command.SetTransform.Transform.ToMatrix(out mat4);
                         Matrix matrix;
                         FromNeoGuiToMonoGameMatrix(out matrix, ref mat4);
-                        basicEffect.World = matrix;// * Matrix.CreateScale(1, 1, 0);
+                        basicEffect.World = matrix * Matrix.CreateScale(1, 1, 0);
                         spriteBatch.Begin(SpriteSortMode.Immediate, null, SamplerState.AnisotropicClamp, depthStencilState, rasterizerState, basicEffect);
                         break;
                     case DrawCommandType.SolidRect:
@@ -230,7 +230,7 @@ namespace NeoGui
         {
             var viewport = GraphicsDevice.Viewport;
             basicEffect.Projection = Matrix.CreateTranslation(-0.5f, -0.5f, 0) * 
-                             Matrix.CreateOrthographicOffCenter(0, viewport.Width, viewport.Height, 0, -3000, 1000);
+                             Matrix.CreateOrthographicOffCenter(0, viewport.Width, viewport.Height, 0, 0, 1);
 
             DrawUi();
             

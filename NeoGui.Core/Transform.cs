@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections;
-
+﻿
 namespace NeoGui.Core
 {
     public struct Transform
@@ -10,32 +8,15 @@ namespace NeoGui.Core
         public Vec3 Translation;
         public Vec3 Scale;
 
-        //public Vec3 ApplyForward(Vec3 v) => Rotation * (Scale * (v - Pivot)) + Translation + Pivot;
-        public Vec3 ApplyForward(Vec3 v)
-        {
-            var temp0 = v - Pivot;
-            var temp1 = Scale * temp0;
-            var temp2 = Rotation * temp1;
-            var temp3 = temp2 + Translation + Pivot;
-            return temp3;
-        }
-
-        //public Vec3 ApplyInverse(Vec3 v) => (Scale.Inverse * (Rotation.Conjugate * (v - Pivot - Translation))) + Pivot;
-        public Vec3 ApplyInverse(Vec3 v)
-        {
-            var temp0 = v - Pivot - Translation;
-            var temp1 = Rotation.Conjugate * temp0;
-            var temp2 = Scale.Inverse * temp1;
-            var temp3 = temp2 + Pivot;
-            return temp3;
-        }
+        public Vec3 ApplyForward(Vec3 localPos) => Rotation * (Scale * (localPos - Pivot)) + Translation;
+        public Vec3 ApplyInverse(Vec3 worldPos) => (Scale.Inverse * (Rotation.Conjugate * (worldPos - Translation))) + Pivot;
 
         public void Product(ref Transform a, ref Transform b)
         {
             Pivot = b.Pivot;
             Rotation = a.Rotation * b.Rotation;
             Scale = a.Scale * b.Scale;
-            Translation = a.ApplyForward(b.Translation);
+            Translation = a.ApplyForward(b.Translation + b.Pivot);
         }
 
         public void MakeIdentity()
@@ -50,9 +31,9 @@ namespace NeoGui.Core
         {
             Rotation.ToMatrix(out m);
 
-            m.M14 = -(m.M11 * Pivot.X * Scale.X) - (m.M12 * Pivot.Y * Scale.Y) - (m.M13 * Pivot.Z * Scale.Z) + Pivot.X + Translation.X;
-            m.M24 = -(m.M21 * Pivot.X * Scale.X) - (m.M22 * Pivot.Y * Scale.Y) - (m.M23 * Pivot.Z * Scale.Z) + Pivot.Y + Translation.Y;
-            m.M34 = -(m.M31 * Pivot.X * Scale.X) - (m.M32 * Pivot.Y * Scale.Y) - (m.M33 * Pivot.Z * Scale.Z) + Pivot.Z + Translation.Z;
+            m.M14 = -(m.M11 * Pivot.X * Scale.X) - (m.M12 * Pivot.Y * Scale.Y) - (m.M13 * Pivot.Z * Scale.Z) + Translation.X;
+            m.M24 = -(m.M21 * Pivot.X * Scale.X) - (m.M22 * Pivot.Y * Scale.Y) - (m.M23 * Pivot.Z * Scale.Z) + Translation.Y;
+            m.M34 = -(m.M31 * Pivot.X * Scale.X) - (m.M32 * Pivot.Y * Scale.Y) - (m.M33 * Pivot.Z * Scale.Z) + Translation.Z;
 
             m.M11 *= Scale.X;
             m.M21 *= Scale.X;

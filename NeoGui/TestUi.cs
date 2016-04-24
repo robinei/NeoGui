@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using NeoGui.Core;
 using NeoGui.Toolkit;
@@ -131,10 +132,12 @@ namespace NeoGui
 
                     var contentPanel = ScrollArea.GetContentPanel(scrollArea);
                     contentPanel.Size = new Vec2(250, 250);
+                    contentPanel.Rotation = Quat.FromAxisAngle(new Vec3(1, 1, 1).Normalized, (float)ui.Input.Time);
+                    contentPanel.ClipContent = false;
                     Panel.AddProps(contentPanel, new Color(220, 220, 220));
 
-                    var label = Label.Create(contentPanel, "Drag me");
-                    label.Pos = new Vec2(10, 10);
+                    var dragLabel = Label.Create(contentPanel, "Drag me");
+                    dragLabel.Pos = new Vec2(10, 10);
 
                     var button = TextButton.Create(contentPanel, "Hello", e => Debug.WriteLine("Hello"));
                     button.Rect = new Rect(10, 50, 100, 30);

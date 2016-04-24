@@ -309,6 +309,15 @@ namespace NeoGui.Core
             }
         }
 
+        public void HitTest(Vec2 worldPos, List<Element> result)
+        {
+            for (var i = bottomToTopIndex.Count - 1; i >= 0; --i) {
+                var e = new Element(this, i);
+                if (e.HitTest(worldPos)) {
+                    result.Add(e);
+                }
+            }
+        }
 
         
         
