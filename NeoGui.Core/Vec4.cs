@@ -30,7 +30,8 @@ namespace NeoGui.Core
             Z = v.Z;
             W = w;
         }
-
+        
+        public Vec2 XY => new Vec2(X, Y);
         public Vec3 XYZ => new Vec3(X, Y, Z);
 
         public float this[int i]
@@ -57,9 +58,9 @@ namespace NeoGui.Core
 
         public float Length => (float)Math.Sqrt(SqrLength);
         public float SqrLength => X * X + Y * Y + Z * Z + W * W;
-        public Vec4 Normalized => this * (1.0f / Length);
+        public Vec4 Normalized => this * (1f / Length);
         public Vec4 Abs => new Vec4(Math.Abs(X), Math.Abs(Y), Math.Abs(Z), Math.Abs(W));
-        public Vec4 Inverse => new Vec4(1.0f / X, 1.0f / Y, 1.0f / Z, 1.0f / W);
+        public Vec4 Inverse => new Vec4(1f / X, 1f / Y, 1f / Z, 1f / W);
         public float Angle(Vec4 v) => (float)Math.Acos(Dot(v) / (Length * v.Length));
         public float Dot(Vec4 v) => X * v.X + Y * v.Y + Z * v.Z + W * v.W;
 
@@ -69,10 +70,14 @@ namespace NeoGui.Core
         public static Vec4 operator *(float f, Vec4 v) => new Vec4(f * v.X, f * v.Y, f * v.Z, f * v.W);
         public static Vec4 operator *(Vec4 a, Vec4 b) => new Vec4(a.X * b.X, a.Y * b.Y, a.Z * b.Z, a.W * b.W);
         public static Vec4 operator /(Vec4 a, Vec4 b) => new Vec4(a.X / b.X, a.Y / b.Y, a.Z / b.Z, a.W / b.W);
-        public static Vec4 operator /(Vec4 v, float f) => v * (1.0f / f);
+        public static Vec4 operator /(Vec4 v, float f) => v * (1f / f);
 
-        public static readonly Vec4 Zero = new Vec4(0, 0, 0, 0);
-        public static readonly Vec4 UnitScale = new Vec4(1, 1, 1, 1);
+        public static Vec4 Zero => new Vec4(0, 0, 0, 0);
+        public static Vec4 UnitX => new Vec4(1, 0, 0, 0);
+        public static Vec4 UnitY => new Vec4(0, 1, 0, 0);
+        public static Vec4 UnitZ => new Vec4(0, 0, 1, 0);
+        public static Vec4 UnitW => new Vec4(0, 0, 0, 1);
+        public static Vec4 ScaleIdentity => new Vec4(1, 1, 1, 1);
 
         public override string ToString() => $"Vec4({X}, {Y}, {Z}, {W})";
     }

@@ -47,7 +47,7 @@ namespace NeoGui
                     panelStateDomain.Reset();
                 }
             });
-            toggleButton.Scale = new Vec3(0.5f, 0.5f, 0);
+            toggleButton.Scale = new Vec3(0.5f, 0.5f, 1) + new Vec3(1, 1, 0) * (float)Math.Abs(Math.Sin(ui.Input.Time));
             toggleButton.Rect = new Rect(70, 40, 100, 30);
 
             if (panelVisible) {
@@ -139,8 +139,17 @@ namespace NeoGui
                     var button = TextButton.Create(contentPanel, "Hello", e => Debug.WriteLine("Hello"));
                     button.Rect = new Rect(10, 50, 100, 30);
                     //button.Pivot = new Vec3(0, 0, 10);
-                    button.Rotation = Quat.FromAxisAngle(new Vec3(0, 1, 0).Normalized, (float)ui.Input.Time);
-                    
+                    button.Rotation = Quat.FromAxisAngle(new Vec3(1, 1, 1).Normalized, (float)ui.Input.Time);
+                    //button.Rotation = Quat.FromAxisAngle(new Vec3(0, 0, 1).Normalized, (float)Math.Sin(ui.Input.Time));
+                    //button.Rotation = Quat.FromAxisAngle(new Vec3(0, 1, 0).Normalized, 1f);
+
+                    button.OnDepthDescent(e => {
+                        var p0 = e.ToWorldCoord(Vec3.Zero);
+                        e.Context.Delegate.DrawDot(p0 + e.Normal * 10, Color.Yellow);
+                        e.Context.Delegate.DrawDot(p0 + e.Normal * 20, Color.Yellow);
+                        e.Context.Delegate.DrawDot(p0 + e.Normal * 30, Color.Yellow);
+                    });
+
                     var toggleLabel = Label.Create(contentPanel, "Toggle me:");
                     toggleLabel.Pos = new Vec2(10, 100);
                     var toggle = ToggleSwitch.Create(contentPanel, switchValue, e => switchValue = !switchValue);

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 
 namespace NeoGui.Core
 {
@@ -9,9 +10,25 @@ namespace NeoGui.Core
         public Vec3 Translation;
         public Vec3 Scale;
 
-        public Vec3 ApplyForward(Vec3 v) => Rotation * (Scale * (v - Pivot)) + Translation + Pivot;
+        //public Vec3 ApplyForward(Vec3 v) => Rotation * (Scale * (v - Pivot)) + Translation + Pivot;
+        public Vec3 ApplyForward(Vec3 v)
+        {
+            var temp0 = v - Pivot;
+            var temp1 = Scale * temp0;
+            var temp2 = Rotation * temp1;
+            var temp3 = temp2 + Translation + Pivot;
+            return temp3;
+        }
 
-        public Vec3 ApplyInverse(Vec3 v) => (Scale.Inverse * (Rotation.Conjugate * (v - Pivot - Translation))) + Pivot;
+        //public Vec3 ApplyInverse(Vec3 v) => (Scale.Inverse * (Rotation.Conjugate * (v - Pivot - Translation))) + Pivot;
+        public Vec3 ApplyInverse(Vec3 v)
+        {
+            var temp0 = v - Pivot - Translation;
+            var temp1 = Rotation.Conjugate * temp0;
+            var temp2 = Scale.Inverse * temp1;
+            var temp3 = temp2 + Pivot;
+            return temp3;
+        }
 
         public void Product(ref Transform a, ref Transform b)
         {
@@ -21,30 +38,13 @@ namespace NeoGui.Core
             Translation = a.ApplyForward(b.Translation);
         }
 
-        public void GetAxes(out Vec3 ax, out Vec3 ay, out Vec3 az)
-        {
-            Mat4 m;
-		    Rotation.Conjugate.ToMatrix(out m);
-		    ax = new Vec3(m.M11, m.M12, m.M13);
-		    ay = new Vec3(m.M21, m.M22, m.M23);
-		    az = new Vec3(m.M31, m.M32, m.M33);
-        }
-
         public void MakeIdentity()
         {
             Pivot = Vec3.Zero;
             Rotation = Quat.Identity;
             Translation = Vec3.Zero;
-            Scale = Vec3.UnitScale;
+            Scale = Vec3.ScaleIdentity;
         }
-
-        public void MakeUnitScale()
-        {
-            Scale = Vec3.UnitScale;
-        }
-
-        public float MinScale => Math.Min(Scale.X, Math.Min(Scale.Y, Scale.Z));
-        public float MaxScale => Math.Max(Scale.X, Math.Max(Scale.Y, Scale.Z));
 
         public void ToMatrix(out Mat4 m)
         {
@@ -65,6 +65,15 @@ namespace NeoGui.Core
             m.M13 *= Scale.Z;
             m.M23 *= Scale.Z;
             m.M33 *= Scale.Z;
+        }
+
+        public void GetAxes(out Vec3 ax, out Vec3 ay, out Vec3 az)
+        {
+            Mat4 m;
+		    Rotation.ToMatrix(out m);
+		    ax = new Vec3(m.M11, m.M21, m.M31);
+		    ay = new Vec3(m.M12, m.M22, m.M32);
+		    az = new Vec3(m.M13, m.M23, m.M33);
         }
     }
 }

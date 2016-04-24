@@ -33,9 +33,9 @@ namespace NeoGui.Core
 
         public float Length => (float)Math.Sqrt(SqrLength);
         public float SqrLength => X * X + Y * Y;
-        public Vec2 Normalized => this * (1.0f / Length);
+        public Vec2 Normalized => this * (1f / Length);
         public Vec2 Abs => new Vec2(Math.Abs(X), Math.Abs(Y));
-        public Vec2 Inverse => new Vec2(1.0f / X, 1.0f / Y);
+        public Vec2 Inverse => new Vec2(1f / X, 1f / Y);
         public float Angle(Vec2 v) => (float)Math.Acos(Dot(v) / (Length * v.Length));
         public float Dot(Vec2 v) => X * v.X + Y * v.Y;
 
@@ -45,9 +45,12 @@ namespace NeoGui.Core
         public static Vec2 operator *(float f, Vec2 v) => new Vec2(f * v.X, f * v.Y);
         public static Vec2 operator *(Vec2 a, Vec2 b) => new Vec2(a.X * b.X, a.Y * b.Y);
         public static Vec2 operator /(Vec2 a, Vec2 b) => new Vec2(a.X / b.X, a.Y / b.Y);
-        public static Vec2 operator /(Vec2 v, float f) => v * (1.0f / f);
+        public static Vec2 operator /(Vec2 v, float f) => v * (1f / f);
 
-        public static readonly Vec2 Zero = new Vec2(0, 0);
+        public static Vec2 Zero => new Vec2(0, 0);
+        public static Vec2 UnitX => new Vec2(1, 0);
+        public static Vec2 UnitY => new Vec2(0, 1);
+        public static Vec2 ScaleIdentity => new Vec2(1, 1);
 
         public override string ToString() => $"Vec2({X}, {Y})";
     }

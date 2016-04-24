@@ -31,9 +31,6 @@ namespace NeoGui.Core
         public bool HasChildren => Context.AttrFirstChild[Index] > 0;
         public bool HasNextSibling => Context.AttrNextSibling[Index] > 0;
 
-        public bool IsUnderMouse => HitTest(Context.Input.MousePos);
-        public bool HitTest(Vec2 p) => ClipRect.Contains(p) && new Rect(Size).Contains(ToLocalCoord(p));
-
 
         public void OnDepthDescent(Action<Element> handler) { Context.AddDepthDescentHandler(Index, handler); }
         public void OnDepthAscent(Action<Element> handler) { Context.AddDepthAscentHandler(Index, handler); }
@@ -102,8 +99,56 @@ namespace NeoGui.Core
         }
         
 
-        public Vec2 ToLocalCoord(Vec2 worldPos) => Context.AttrWorldTransform[Index].ApplyInverse(new Vec3(worldPos)).XY;
-        public Vec2 ToWorldCoord(Vec2 localPos) => Context.AttrWorldTransform[Index].ApplyForward(new Vec3(localPos)).XY;
+        public bool IsUnderMouse => HitTest(Context.Input.MousePos);
+
+        public bool HitTest(Vec2 p)
+        {
+            if (!ClipRect.Contains(p)) {
+                return false;
+            }
+            var planeIntersect = PlaneIntersection(new Vec3(p));
+            if (planeIntersect == null) {
+                return false;
+            }
+            return new Rect(Size).Contains(ToLocalCoord(planeIntersect.Value).XY);
+        }
+
+        /// <summary>
+        /// The normal vector of the plane of this element, in world space.
+        /// </summary>
+        public Vec3 Normal
+        {
+            get
+            {
+                var a = ToWorldCoord(Vec3.Zero);
+                var b = ToWorldCoord(Vec3.UnitZ);
+                var n = (b - a);
+                return n.Normalized;
+            }
+        }
+
+        /// <summary>
+        /// Return the point in world space at which an infinite line through the screen at the given position
+        /// intersects the plane of this element. The result will only differ from the input in Z value.
+        /// </summary>
+        public Vec3? PlaneIntersection(Vec3 worldPos)
+        {
+            var n = Normal;
+            var l = Vec3.UnitZ;
+            var denom = n.Dot(l);
+            if (Math.Abs(denom) > 0.000001f) {
+                var planeOrigin = ToWorldCoord(Vec3.Zero);
+                var toPlaneOrigin = planeOrigin - worldPos;
+                var t = toPlaneOrigin.Dot(n) / denom;
+                return worldPos + l * t;
+            }
+            return null;
+        }
+        
+        public Vec3 ToLocalCoord(Vec3 worldPos) => Context.AttrWorldTransform[Index].ApplyInverse(worldPos);
+        public Vec3 ToWorldCoord(Vec3 localPos) => Context.AttrWorldTransform[Index].ApplyForward(localPos);
+        public Vec2 ToLocalCoord(Vec2 worldPos) => ToLocalCoord(new Vec3(worldPos)).XY;
+        public Vec2 ToWorldCoord(Vec2 localPos) => ToWorldCoord(new Vec3(localPos)).XY;
 
 
         #region Misc forwarded properties

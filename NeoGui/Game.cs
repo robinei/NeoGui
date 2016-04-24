@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using NeoGui.Core;
+using OpenTK.Graphics.OpenGL;
 using Color = Microsoft.Xna.Framework.Color;
 
 namespace NeoGui
@@ -40,6 +42,17 @@ namespace NeoGui
             return new Vec2(size.X, size.Y);
         }
 
+        private struct Dot
+        {
+            public Vec3 Pos;
+            public NeoGui.Core.Color Color;
+        }
+        private readonly List<Dot> debugDots = new List<Dot>();
+        public void DrawDot(Vec3 p, NeoGui.Core.Color? c = null)
+        {
+            debugDots.Add(new Dot {Pos = p, Color = c ?? NeoGui.Core.Color.Red});
+        }
+
         public Game()
         {
             graphics = new GraphicsDeviceManager(this);
@@ -53,7 +66,7 @@ namespace NeoGui
             var trans = new Transform();
             trans.MakeIdentity();
             //trans.Translation.X += 10;
-            trans.Scale = Vec3.UnitScale * 0.5f;
+            trans.Scale = Vec3.ScaleIdentity * 0.5f;
             trans.Rotation = Quat.FromAxisAngle(1, 0, 0, (float)Math.PI);
             trans.Rotation = Quat.FromEulerAngles(0, (float)Math.PI, 0);
 
@@ -76,6 +89,23 @@ namespace NeoGui
 
             Debug.WriteLine("Mat0: " + Matrix.CreateTranslation(1, 1, 0));
             Debug.WriteLine("Mat1: " + m);
+
+
+            trans.MakeIdentity();
+            trans.Rotation = Quat.FromAxisAngle(new Vec3(1, 2, 3).Normalized, 1f);
+            Vec3 ax, ay, az;
+            trans.GetAxes(out ax, out ay, out az);
+            Debug.WriteLine("ax: " + ax);
+            Debug.WriteLine("ay: " + ay);
+            Debug.WriteLine("az: " + az);
+            Debug.WriteLine("ax x ay: " + ax.Cross(ay));
+
+            var bx = trans.Rotation * Vec3.UnitX;
+            var by = trans.Rotation * Vec3.UnitY;
+            var bz = trans.Rotation * Vec3.UnitZ;
+            Debug.WriteLine("bx: " + bx);
+            Debug.WriteLine("by: " + by);
+            Debug.WriteLine("bz: " + bz);
         }
         
         protected override void Initialize()
@@ -114,6 +144,7 @@ namespace NeoGui
         protected override void Update(GameTime gameTime)
         {
             ++frameCounter;
+            debugDots.Clear();
 
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape)) {
                 Exit();
@@ -158,13 +189,8 @@ namespace NeoGui
         private void DrawUi()
         {
             GraphicsDevice.SetRenderTarget(renderTarget);
-
-            /*var viewport = GraphicsDevice.Viewport;
-            basicEffect.Projection = Matrix.CreateTranslation(-0.5f, -0.5f, 0) * 
-                             Matrix.CreateOrthographicOffCenter(0, viewport.Width, viewport.Height, 0, 0, 1);*/
-
-            //spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, null, null, rasterizerState, basicEffect);
-            spriteBatch.Begin(SpriteSortMode.Immediate, null, SamplerState.AnisotropicClamp, depthStencilState, rasterizerState);
+            
+            spriteBatch.Begin(SpriteSortMode.Immediate, null, SamplerState.AnisotropicClamp, depthStencilState, rasterizerState, basicEffect);
             foreach (var buffer in ui.DirtyDrawCommandBuffers) {
                 for (var i = 0; i < buffer.Count; ++i) {
                     var command = buffer[i];
@@ -178,7 +204,8 @@ namespace NeoGui
                         command.SetTransform.Transform.ToMatrix(out mat4);
                         Matrix matrix;
                         FromNeoGuiToMonoGameMatrix(out matrix, ref mat4);
-                        spriteBatch.Begin(SpriteSortMode.Immediate, null, SamplerState.AnisotropicClamp, depthStencilState, rasterizerState, null, matrix * Matrix.CreateScale(1, 1, 0));
+                        basicEffect.World = matrix;// * Matrix.CreateScale(1, 1, 0);
+                        spriteBatch.Begin(SpriteSortMode.Immediate, null, SamplerState.AnisotropicClamp, depthStencilState, rasterizerState, basicEffect);
                         break;
                     case DrawCommandType.SolidRect:
                         spriteBatch.Draw(pixel, command.SolidRect.Rect.ToMonoGameRectangle(), command.SolidRect.Color.ToMonoGameColor());
@@ -201,15 +228,37 @@ namespace NeoGui
 
         protected override void Draw(GameTime gameTime)
         {
+            var viewport = GraphicsDevice.Viewport;
+            basicEffect.Projection = Matrix.CreateTranslation(-0.5f, -0.5f, 0) * 
+                             Matrix.CreateOrthographicOffCenter(0, viewport.Width, viewport.Height, 0, -3000, 1000);
+
             DrawUi();
             
             spriteBatch.Begin();
             spriteBatch.Draw(renderTarget, GraphicsDevice.Viewport.Bounds, Color.White);
+            spriteBatch.End();
+
+            foreach (var dot in debugDots) {
+                var trans = new Transform();
+                trans.MakeIdentity();
+                trans.Translation = dot.Pos;
+                Mat4 mat4;
+                trans.ToMatrix(out mat4);
+                Matrix matrix;
+                FromNeoGuiToMonoGameMatrix(out matrix, ref mat4);
+                basicEffect.World = matrix;
+                spriteBatch.Begin(SpriteSortMode.Immediate, null, SamplerState.AnisotropicClamp, depthStencilState, rasterizerState, basicEffect);
+                spriteBatch.Draw(pixel, new Rectangle(-2, -2, 4, 4), dot.Color.ToMonoGameColor());
+                spriteBatch.End();
+            }
+            
             var memMegaBytes = GC.GetTotalMemory(false) / (1024.0 * 1024.0);
             string fps = $"fps: {frameRate}  mem: {memMegaBytes:F1} MB";
+            spriteBatch.Begin();
             spriteBatch.DrawString(font, fps, new Vector2(5, 1), Color.White);
             spriteBatch.DrawString(font, fps, new Vector2(4, 0), Color.Black);
             spriteBatch.End();
+
             base.Draw(gameTime);
         }
         

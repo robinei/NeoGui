@@ -5,22 +5,24 @@ namespace NeoGui.Core
 {
     public struct Quat
     {
-        public float W, X, Y, Z;
+        public float X, Y, Z, W;
 
-        public Quat(float w, float x, float y, float z)
+        public Vec3 XYZ => new Vec3(X, Y, Z);
+
+        public Quat(float x, float y, float z, float w)
         {
-            W = w;
             X = x;
             Y = y;
             Z = z;
+            W = w;
         }
 
-        public Quat(float w, Vec3 v)
+        public Quat(Vec3 v, float w)
         {
-            W = w;
             X = v.X;
             Y = v.Y;
             Z = v.Z;
+            W = w;
         }
 
         public float this[int i]
@@ -28,46 +30,43 @@ namespace NeoGui.Core
             get
             {
                 Debug.Assert(i >= 0 && i < 4);
-                return i == 0 ? W : (i == 1 ? X : (i == 2 ? Y : Z));
+                return i == 0 ? X : (i == 1 ? Y : (i == 2 ? Z : W));
             }
             set
             {
                 Debug.Assert(i >= 0 && i < 4);
                 if (i == 0) {
-                    W = value;
-                } else if (i == 1) {
                     X = value;
-                } else if (i == 2) {
+                } else if (i == 1) {
                     Y = value;
-                } else {
+                } else if (i == 2) {
                     Z = value;
+                } else {
+                    W = value;
                 }
             }
         }
         
         public float Length => (float)Math.Sqrt(SqrLength);
-        public float SqrLength => W * W + X * X + Y * Y + Z * Z;
-        public Quat Normalized => this * (1.0f / Length);
-        public Quat Conjugate => new Quat(W, -X, -Y, -Z);
-        public float Dot(Quat q) => W * q.W + X * q.X + Y * q.Y + Z * q.Z;
+        public float SqrLength => X * X + Y * Y + Z * Z + W * W;
+        public Quat Normalized => this * (1f / Length);
+        public Quat Conjugate => new Quat(-X, -Y, -Z, W);
+        public float Dot(Quat q) => X * q.X + Y * q.Y + Z * q.Z + W * q.W;
         
-        public static Quat operator +(Quat a, Quat b) => new Quat(a.W + b.W, a.X + b.X, a.Y + b.Y, a.Z + b.Z);
-        public static Quat operator -(Quat a, Quat b) => new Quat(a.W - b.W, a.X - b.X, a.Y - b.Y, a.Z - b.Z);
-        public static Quat operator *(Quat a, float f) => new Quat(a.W * f, a.X * f, a.Y * f, a.Z * f);
+        public static Quat operator +(Quat a, Quat b) => new Quat(a.X + b.X, a.Y + b.Y, a.Z + b.Z, a.W + b.W);
+        public static Quat operator -(Quat a, Quat b) => new Quat(a.X - b.X, a.Y - b.Y, a.Z - b.Z, a.W - b.W);
+        public static Quat operator *(Quat q, float f) => new Quat(q.X * f, q.Y * f, q.Z * f, q.W * f);
         
-        public static Quat operator *(Quat a, Quat b) => new Quat(a.W*b.W - a.X*b.X - a.Y*b.Y - a.Z*b.Z,
-						                                          a.W*b.X + a.X*b.W + a.Y*b.Z - a.Z*b.Y,
-						                                          a.W*b.Y + a.Y*b.W + a.Z*b.X - a.X*b.Z,
-						                                          a.W*b.Z + a.Z*b.W + a.X*b.Y - a.Y*b.X);
+        public static Quat operator *(Quat a, Quat b) => new Quat(a.W*b.X + a.X*b.W + a.Y*b.Z - a.Z*b.Y,
+                                                                  a.W*b.Y + a.Y*b.W + a.Z*b.X - a.X*b.Z,
+                                                                  a.W*b.Z + a.Z*b.W + a.X*b.Y - a.Y*b.X,
+                                                                  a.W*b.W - a.X*b.X - a.Y*b.Y - a.Z*b.Z);
 
         public static Vec3 operator *(Quat q, Vec3 v)
         {
-            var qvec = new Vec3(q.X, q.Y, q.Z);
-            var uv = qvec.Cross(v);
-            var uuv = qvec.Cross(uv);
-            uv *= 2.0f * q.W;
-            uuv *= 2.0f;
-            return v + uv + uuv;
+            var qvec = q.XYZ;
+            var t = 2f * qvec.Cross(v);
+            return v + q.W * t + qvec.Cross(t);
         }
 
         public static Quat Slerp(Quat q0, Quat q1, float t) {
@@ -83,11 +82,11 @@ namespace NeoGui.Core
                 return (q0 + (q1 - q0) * t).Normalized;
             }
 
-            d = Util.Clamp(d, -1.0f, 1.0f);     // Robustness: Stay within domain of acos()
+            d = Util.Clamp(d, -1f, 1f);     // Robustness: Stay within domain of acos()
             var theta0 = (float)Math.Acos(d);   // theta_0 = angle between input vectors
             var theta = theta0*t;               // theta = angle between q0 and result 
 
-            var q2 = (q1 - q0*d).Normalized;
+            var q2 = (q1 - q0 * d).Normalized;
     
             // { q0, q2 } is now an orthonormal basis
             return q0 * (float)Math.Cos(theta) + q2 * (float)Math.Sin(theta);
@@ -98,9 +97,9 @@ namespace NeoGui.Core
             x *= 0.5f;
             y *= 0.5f;
             z *= 0.5f;
-            var qx = new Quat((float)Math.Cos(x), (float)Math.Sin(x), 0, 0);
-            var qy = new Quat((float)Math.Cos(y), 0, (float)Math.Sin(y), 0);
-            var qz = new Quat((float)Math.Cos(z), 0, 0, (float)Math.Sin(z));
+            var qx = new Quat((float)Math.Sin(x), 0, 0, (float)Math.Cos(x));
+            var qy = new Quat(0, (float)Math.Sin(y), 0, (float)Math.Cos(y));
+            var qz = new Quat(0, 0, (float)Math.Sin(z), (float)Math.Cos(z));
             return qx * qy * qz;
         }
 
@@ -110,23 +109,21 @@ namespace NeoGui.Core
         {
             angle *= 0.5f;
             var sinAngle = (float)Math.Sin(angle);
-            return new Quat((float)Math.Cos(angle), x * sinAngle, y * sinAngle, z * sinAngle);
+            return new Quat(x * sinAngle, y * sinAngle, z * sinAngle, (float)Math.Cos(angle));
         }
 
         public static Quat FromAxisAngle(Vec3 axis, float angle) => FromAxisAngle(axis.X, axis.Y, axis.Z, angle);
 
         public static Quat FromArc(Vec3 from, Vec3 to)
         {
-            var c = from.Cross(to);
-            var d = from.Dot(to);
-            return new Quat(d + (float)Math.Sqrt(from.SqrLength * to.SqrLength), c).Normalized;
+            return new Quat(from.Cross(to), from.Dot(to) + (float)Math.Sqrt(from.SqrLength * to.SqrLength)).Normalized;
         }
 
         public void ToMatrix(out Mat4 m)
         {
-            var x2  = 2.0f * X;
-            var y2  = 2.0f * Y;
-            var z2  = 2.0f * Z;
+            var x2  = 2f * X;
+            var y2  = 2f * Y;
+            var z2  = 2f * Z;
             var xw2 = x2 * W;
             var yw2 = y2 * W;
             var zw2 = z2 * W;
@@ -135,31 +132,31 @@ namespace NeoGui.Core
             var xz2 = z2 * X;
             var yy2 = y2 * Y;
             var yz2 = z2 * Y;
-            var zz2 = z2 * Y;
+            var zz2 = z2 * Z;
 
-            m.M11 = 1.0f - yy2 - zz2;
-            m.M21 = xy2 + zw2;
-            m.M31 = xz2 - yw2;
-            m.M41 = 0.0f;
-
+            m.M11 = 1f - yy2 - zz2;
             m.M12 = xy2 - zw2;
-            m.M22 = 1.0f - xx2 - zz2;
-            m.M32 = yz2 + xw2;
-            m.M42 = 0.0f;
-
             m.M13 = xz2 + yw2;
-            m.M23 = yz2 - xw2;
-            m.M33 = 1.0f - xx2 - yy2;
-            m.M43 = 0.0f;
+            m.M14 = 0f;
 
-            m.M14 = 0.0f;
-            m.M24 = 0.0f;
-            m.M34 = 0.0f;
-            m.M44 = 1.0f;
+            m.M21 = xy2 + zw2;
+            m.M22 = 1f - xx2 - zz2;
+            m.M23 = yz2 - xw2;
+            m.M24 = 0f;
+
+            m.M31 = xz2 - yw2;
+            m.M32 = yz2 + xw2;
+            m.M33 = 1f - xx2 - yy2;
+            m.M34 = 0f;
+
+            m.M41 = 0f;
+            m.M42 = 0f;
+            m.M43 = 0f;
+            m.M44 = 1f;
         }
 
-        public static readonly Quat Identity = new Quat(1, 0, 0, 0);
+        public static Quat Identity => new Quat(0, 0, 0, 1);
 
-        public override string ToString() => $"Quat({W}, {X}, {Y}, {Z})";
+        public override string ToString() => $"Quat({X}, {Y}, {Z}, {W})";
     }
 }

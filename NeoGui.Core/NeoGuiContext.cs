@@ -297,6 +297,8 @@ namespace NeoGui.Core
                     }
                 });
                 
+                Delegate.DrawDot(AttrWorldTransform[elemIndex].ApplyForward(Vec3.Zero));
+
                 drawContext.Target = new Element(this, elemIndex);
                 AttrDrawFunc[elemIndex](drawContext);
             }

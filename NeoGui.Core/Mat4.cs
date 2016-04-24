@@ -49,6 +49,29 @@
             );
         }
 
+        public void ToTranspose(out Mat4 m)
+        {
+            m.M11 = M11;
+            m.M12 = M21;
+            m.M13 = M31;
+            m.M14 = M41;
+            
+            m.M21 = M12;
+            m.M22 = M22;
+            m.M23 = M32;
+            m.M24 = M42;
+            
+            m.M31 = M13;
+            m.M32 = M23;
+            m.M33 = M33;
+            m.M34 = M43;
+            
+            m.M41 = M14;
+            m.M42 = M24;
+            m.M43 = M34;
+            m.M44 = M44;
+        }
+
         public override string ToString()
         {
             return $"{{M11:{M11} M12:{M12} M13:{M13} M14:{M14}}} {{M21:{M21} M22:{M22} M23:{M23} M24:{M24}}} {{M31:{M31} M32:{M32} M33:{M33} M34:{M34}}} {{M41:{M41} M42:{M42} M43:{M43} M44:{M44}}}";
