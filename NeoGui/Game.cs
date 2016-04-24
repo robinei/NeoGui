@@ -236,7 +236,7 @@ namespace NeoGui
             
             spriteBatch.Begin();
             spriteBatch.Draw(renderTarget, GraphicsDevice.Viewport.Bounds, Color.White);
-            spriteBatch.End();
+            /*spriteBatch.End();
 
             foreach (var dot in debugDots) {
                 var trans = new Transform();
@@ -250,11 +250,11 @@ namespace NeoGui
                 spriteBatch.Begin(SpriteSortMode.Immediate, null, SamplerState.AnisotropicClamp, depthStencilState, rasterizerState, basicEffect);
                 spriteBatch.Draw(pixel, new Rectangle(-2, -2, 4, 4), dot.Color.ToMonoGameColor());
                 spriteBatch.End();
-            }
+            }*/
             
             var memMegaBytes = GC.GetTotalMemory(false) / (1024.0 * 1024.0);
             string fps = $"fps: {frameRate}  mem: {memMegaBytes:F1} MB";
-            spriteBatch.Begin();
+           // spriteBatch.Begin();
             spriteBatch.DrawString(font, fps, new Vector2(5, 1), Color.White);
             spriteBatch.DrawString(font, fps, new Vector2(4, 0), Color.Black);
             spriteBatch.End();
