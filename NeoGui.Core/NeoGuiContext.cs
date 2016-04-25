@@ -466,19 +466,6 @@ namespace NeoGui.Core
         {
             Input.PreUiUpdate();
 
-            for (var i = 0; i < depthDescentHandlers.Count; ++i) { // rewrite now that we can know z-index
-                var elemIndex = depthDescentHandlers[i].ElemIndex;
-                var key = Util.TwoIntsToLong(AttrZIndex[elemIndex], AttrLevel[elemIndex]);
-                depthDescentHandlers[i] = new TraverseEntry<long>(key, elemIndex, depthDescentHandlers[i].Handler);
-            }
-            postPassHandlers.Clear();
-            depthDescentHandlers.Sort();
-            for (var i = depthDescentHandlers.Count - 1; i >= 0; --i) {
-                depthDescentHandlers[i].Handler(new Element(this, depthDescentHandlers[i].ElemIndex));
-            }
-            depthDescentHandlers.Clear();
-            RunPostPassHandlers();
-
             for (var i = 0; i < depthAscentHandlers.Count; ++i) { // rewrite now that we can know z-index
                 var elemIndex = depthAscentHandlers[i].ElemIndex;
                 var key = Util.TwoIntsToLong(AttrZIndex[elemIndex], AttrLevel[elemIndex]);
@@ -490,6 +477,19 @@ namespace NeoGui.Core
                 depthAscentHandlers[i].Handler(new Element(this, depthAscentHandlers[i].ElemIndex));
             }
             depthAscentHandlers.Clear();
+            RunPostPassHandlers();
+
+            for (var i = 0; i < depthDescentHandlers.Count; ++i) { // rewrite now that we can know z-index
+                var elemIndex = depthDescentHandlers[i].ElemIndex;
+                var key = Util.TwoIntsToLong(AttrZIndex[elemIndex], AttrLevel[elemIndex]);
+                depthDescentHandlers[i] = new TraverseEntry<long>(key, elemIndex, depthDescentHandlers[i].Handler);
+            }
+            postPassHandlers.Clear();
+            depthDescentHandlers.Sort();
+            for (var i = depthDescentHandlers.Count - 1; i >= 0; --i) {
+                depthDescentHandlers[i].Handler(new Element(this, depthDescentHandlers[i].ElemIndex));
+            }
+            depthDescentHandlers.Clear();
             RunPostPassHandlers();
 
             postPassHandlers.Clear();
