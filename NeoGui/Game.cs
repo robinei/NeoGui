@@ -165,7 +165,6 @@ namespace NeoGui
             UpdateInput(gameTime);
             var bounds = GraphicsDevice.Viewport.Bounds;
             TestUi.DoUi(ui, bounds.Width, bounds.Height);
-            ui.RunUpdateTraversals();
 
             base.Update(gameTime);
         }

@@ -76,14 +76,29 @@ namespace NeoGui.Core
 
         public void EndFrame()
         {
+            // invoke registered OnRemoved handlers for elements which did not make it into the tree this frame
             RunRemoveHandlers();
+
+            // invoke registered OnInserted handlers for elements which made it into the tree this frame, and which were not in it before
             RunInsertHandlers();
+            
+            // postprocess the just constructed tree
             PropagateDisablement();
             MeasureElements();
             LayoutElements();
             CalcTransformsAndRects();
             CalcBottomToTopIndex();
+
+            // run the update passes (which process input events etc) on the now fully defined elements
+            Input.PreUiUpdate();
+            RunDepthAscentPass();
+            RunDepthDescentPass();
+            RunTreeDescentPass();
+            RunTreeAscentPass();
+            Input.PostUiUpdate();
+            
             DrawElements();
+
             RotateStateDomains();
         }
         
@@ -461,12 +476,11 @@ namespace NeoGui.Core
         {
             treeAscentHandlers.Add(new TraverseEntry<int>(AttrLevel[elemIndex], elemIndex, handler));
         }
-        
-        public void RunUpdateTraversals()
-        {
-            Input.PreUiUpdate();
 
-            for (var i = 0; i < depthAscentHandlers.Count; ++i) { // rewrite now that we can know z-index
+        private void RunDepthAscentPass()
+        {
+            for (var i = 0; i < depthAscentHandlers.Count; ++i) {
+                // rewrite now that we can know z-index
                 var elemIndex = depthAscentHandlers[i].ElemIndex;
                 var key = Util.TwoIntsToLong(AttrZIndex[elemIndex], AttrLevel[elemIndex]);
                 depthAscentHandlers[i] = new TraverseEntry<long>(key, elemIndex, depthAscentHandlers[i].Handler);
@@ -478,8 +492,12 @@ namespace NeoGui.Core
             }
             depthAscentHandlers.Clear();
             RunPostPassHandlers();
+        }
 
-            for (var i = 0; i < depthDescentHandlers.Count; ++i) { // rewrite now that we can know z-index
+        private void RunDepthDescentPass()
+        {
+            for (var i = 0; i < depthDescentHandlers.Count; ++i) {
+                // rewrite now that we can know z-index
                 var elemIndex = depthDescentHandlers[i].ElemIndex;
                 var key = Util.TwoIntsToLong(AttrZIndex[elemIndex], AttrLevel[elemIndex]);
                 depthDescentHandlers[i] = new TraverseEntry<long>(key, elemIndex, depthDescentHandlers[i].Handler);
@@ -491,7 +509,10 @@ namespace NeoGui.Core
             }
             depthDescentHandlers.Clear();
             RunPostPassHandlers();
+        }
 
+        private void RunTreeDescentPass()
+        {
             postPassHandlers.Clear();
             treeDescentHandlers.Sort();
             for (var i = 0; i < treeDescentHandlers.Count; ++i) {
@@ -499,7 +520,10 @@ namespace NeoGui.Core
             }
             treeDescentHandlers.Clear();
             RunPostPassHandlers();
+        }
 
+        private void RunTreeAscentPass()
+        {
             postPassHandlers.Clear();
             treeAscentHandlers.Sort();
             for (var i = treeAscentHandlers.Count - 1; i >= 0; --i) {
@@ -507,8 +531,6 @@ namespace NeoGui.Core
             }
             treeAscentHandlers.Clear();
             RunPostPassHandlers();
-            
-            Input.PostUiUpdate();
         }
 
         private readonly List<KeyedValue<int, Action<Element>>> postPassHandlers = new List<KeyedValue<int, Action<Element>>>();
