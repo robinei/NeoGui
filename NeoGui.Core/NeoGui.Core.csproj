@@ -39,6 +39,7 @@
   <ItemGroup>
     <Compile Include="Color.cs" />
     <Compile Include="DrawCommandBuffer.cs" />
+    <Compile Include="ElementStateProxy.cs" />
     <Compile Include="InputContext.cs" />
     <Compile Include="Mat4.cs" />
     <Compile Include="NeoGuiContext.cs" />

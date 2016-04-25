@@ -3,7 +3,7 @@ using NeoGui.Core;
 
 namespace NeoGui.Toolkit
 {
-    public class ToogleSwitchState
+    public class ToggleSwitchState
     {
         public float Pos, Start, Target;
         public double T0, T1;
@@ -22,7 +22,7 @@ namespace NeoGui.Toolkit
             if (onToggled != null) {
                 toggleSwitch.Set(new ButtonCallback { OnClick = onToggled });
             }
-            var state = toggleSwitch.GetOrCreateState<ToogleSwitchState>();
+            var state = toggleSwitch.GetOrCreateState<ToggleSwitchState>();
             var target = on ? 1f : 0f;
             if (Math.Abs(target - state.Target) > 0.000001f) {
                 state.Start = state.Pos;
@@ -35,13 +35,13 @@ namespace NeoGui.Toolkit
 
         public static void OnInserted(Element toggleSwitch)
         {
-            var state = toggleSwitch.GetOrCreateState<ToogleSwitchState>();
+            var state = toggleSwitch.GetOrCreateState<ToggleSwitchState>();
             state.Pos = state.Target;
         }
 
         private static void OnDepthDescent(Element toggleSwitch)
         {
-            var state = toggleSwitch.GetOrCreateState<ToogleSwitchState>();
+            var state = toggleSwitch.GetOrCreateState<ToggleSwitchState>();
             if (Math.Abs(state.Target - state.Pos) > 0.000001f) {
                 var t = Util.NormalizeInInterval(toggleSwitch.Context.Input.Time, state.T0, state.T1);
                 state.Pos = state.Start + (state.Target - state.Start) * (float)t;
@@ -51,7 +51,7 @@ namespace NeoGui.Toolkit
         public static void Draw(DrawContext dc)
         {
             var toggleSwitch = dc.Target;
-            var state = toggleSwitch.GetOrCreateState<ToogleSwitchState>();
+            var state = toggleSwitch.GetOrCreateState<ToggleSwitchState>();
             var size = toggleSwitch.Size;
             dc.SolidRect(new Rect(size), Color.Gray);
             dc.SolidRect(new Rect(state.Pos * (size.X - size.Y), 0, size.Y, size.Y), Color.DarkGray);

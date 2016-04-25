@@ -5,6 +5,12 @@ namespace NeoGui.Core
 {
     public class StateDomain : IDisposable
     {
+        public void Dispose()
+        {
+            context.RelinquishStateDomain(this);
+        }
+
+
         private struct Entry
         {
             public int KeyId;
@@ -21,8 +27,8 @@ namespace NeoGui.Core
         {
             this.context = context;
         }
-
-        internal long NewStateIdForKey(object key)
+        
+        internal long GetStateIdForOwnKey(object key)
         {
             Entry entry;
             if (!entries.TryGetValue(key, out entry)) {
@@ -32,28 +38,19 @@ namespace NeoGui.Core
             entries[key] = entry;
             return Util.TwoIntsToLong(entry.KeyId, entry.Counter);
         }
-
-        internal long GetStateIdForKey(object key)
+        
+        internal long GetStateIdForInheritedKey(object key)
         {
-            Entry entry;
-            if (!entries.TryGetValue(key, out entry)) {
-                entry.KeyId = ++context.KeyIdCounter;
-            }
+            var entry = entries[key];
             ++entry.Counter;
             entries[key] = entry;
             return Util.TwoIntsToLong(entry.KeyId, entry.Counter);
         }
 
-        public void Reset()
+        internal void Reset()
         {
             entries.Clear();
             Storage.Clear();
-        }
-
-        public void Dispose()
-        {
-            Reset();
-            context.ReuseStateDomain(this);
         }
     }
 }

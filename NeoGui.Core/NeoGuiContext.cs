@@ -4,34 +4,6 @@ using System.Diagnostics;
 
 namespace NeoGui.Core
 {
-    /// <summary>
-    /// Static members of generic classes are generated once for each combination of type arguments.
-    /// We exploit this to maintain a static mapping from types to integer values.
-    /// In fact we maintain several mappings: one per category type.
-    /// </summary>
-    internal static class TypeKeys<TCategory, T>
-    {
-        public static readonly int Key = TypeKeyMap<TCategory>.KeyOf(typeof(T));
-    }
-    
-    // ReSharper disable once UnusedTypeParameter
-    internal static class TypeKeyMap<TCategory>
-    {
-        // ReSharper disable once StaticMemberInGenericType
-        private static readonly Dictionary<Type, int> Map = new Dictionary<Type, int>();
-
-        public static int KeyOf(Type type)
-        {
-            int key;
-            if (Map.TryGetValue(type, out key)) {
-                return key;
-            }
-            key = Map.Count;
-            Map[type] = key;
-            return key;
-        }
-    }
-
     [Flags]
     internal enum ElementFlags
     {
@@ -43,19 +15,14 @@ namespace NeoGui.Core
 
     public class NeoGuiContext
     {
-        // categories for TypeKeys
-        internal struct DataKeys { }
-        internal struct EventKeys { }
-
-        private const int InitialArraySize = 128;
-
         private readonly object rootKey = new object();
         private readonly StateDomain rootStateDomain;
-        private Dictionary<long, int> currIdToIndexMap = new Dictionary<long, int>();
-        private Dictionary<long, int> prevIdToIndexMap = new Dictionary<long, int>();
+        private Dictionary<long, StateDomain> currStateIds = new Dictionary<long, StateDomain>();
+        private Dictionary<long, StateDomain> prevStateIds = new Dictionary<long, StateDomain>();
 
         internal int ElementCount;
-
+        
+        private const int InitialArraySize = 128;
         internal long[] AttrStateId = new long[InitialArraySize];
         internal object[] AttrStateKey = new object[InitialArraySize];
         internal StateDomain[] AttrStateDomain = new StateDomain[InitialArraySize];
@@ -77,6 +44,7 @@ namespace NeoGui.Core
 
         // extra data which we don't deign to make an array for above goes here...
         internal readonly ValueStorage<DataKeys, int> DataStorage = new ValueStorage<DataKeys, int>();
+        internal struct DataKeys { }
 
 
         public readonly INeoGuiDelegate Delegate;
@@ -91,11 +59,12 @@ namespace NeoGui.Core
 
         public void BeginFrame()
         {
-            var temp = currIdToIndexMap;
-            currIdToIndexMap = prevIdToIndexMap;
-            prevIdToIndexMap = temp;
-            currIdToIndexMap.Clear();
-            
+            var temp = currStateIds;
+            currStateIds = prevStateIds;
+            prevStateIds = temp;
+            currStateIds.Clear();
+
+            DataStorage.Clear();
             ElementCount = 1; // need to forge this, to get past assert in Element constructor
             var root = Root;
             ElementCount = 0;
@@ -103,14 +72,11 @@ namespace NeoGui.Core
             CreateElement(root, rootKey, rootStateDomain); // create root element (pretending it is its own parent)
             AttrFirstChild[0] = -1; // undo root element being its own child
             AttrParent[0] = -1; // undo root element being its own parent
-
-            DataStorage.Clear();
-            ClearTraverseHandlers();
-            insertHandlers.Clear();
         }
 
         public void EndFrame()
         {
+            RunRemoveHandlers();
             RunInsertHandlers();
             PropagateDisablement();
             MeasureElements();
@@ -118,6 +84,7 @@ namespace NeoGui.Core
             CalcTransformsAndRects();
             CalcBottomToTopIndex();
             DrawElements();
+            RotateStateDomains();
         }
         
         public Element Root => new Element(this, 0);
@@ -152,11 +119,11 @@ namespace NeoGui.Core
             long id;
             if (key == null) {
                 key = AttrStateKey[parent.Index];
-                id = domain.GetStateIdForKey(key);
+                id = domain.GetStateIdForInheritedKey(key);
             } else {
-                id = domain.NewStateIdForKey(key);
+                id = domain.GetStateIdForOwnKey(key);
             }
-            currIdToIndexMap[id] = ElementCount;
+            currStateIds[id] = domain;
 
             AttrStateId[ElementCount] = id;
             AttrStateKey[ElementCount] = key;
@@ -322,19 +289,36 @@ namespace NeoGui.Core
         
         
         internal int KeyIdCounter;
-
-        private readonly Stack<StateDomain> stateDomainCache = new Stack<StateDomain>();
+        
+        private readonly Stack<StateDomain> stateDomainsRelinquishedThisFrame = new Stack<StateDomain>();
+        private readonly Stack<StateDomain> stateDomainsPendingReuse = new Stack<StateDomain>();
+        private readonly Stack<StateDomain> stateDomainsReadyForReuse = new Stack<StateDomain>();
 
         public StateDomain CreateStateDomain()
         {
-            if (stateDomainCache.Count > 0) {
-                return stateDomainCache.Pop();
+            if (stateDomainsReadyForReuse.Count > 0) {
+                return stateDomainsReadyForReuse.Pop();
             }
             return new StateDomain(this);
         }
-        internal void ReuseStateDomain(StateDomain domain)
+        internal void RelinquishStateDomain(StateDomain domain)
         {
-            stateDomainCache.Push(domain);
+            stateDomainsRelinquishedThisFrame.Push(domain);
+        }
+        private void RotateStateDomains()
+        {
+            // this seemingly needlessly complicated system ensures that even if a StateDomain is disposed the
+            // last frame before an element disappears (maybe as a consequence of the same thing that causes the 
+            // element to disappear), it will still not have been reused next frame, so that
+            // it may be used by the OnRemoved handler (which will then run) to access the element's state
+            while (stateDomainsPendingReuse.Count > 0) {
+                var domain = stateDomainsPendingReuse.Pop();
+                domain.Reset();
+                stateDomainsReadyForReuse.Push(domain);
+            }
+            while (stateDomainsRelinquishedThisFrame.Count > 0) {
+                stateDomainsPendingReuse.Push(stateDomainsRelinquishedThisFrame.Pop());
+            }
         }
 
 
@@ -404,11 +388,37 @@ namespace NeoGui.Core
         private void RunInsertHandlers()
         {
             foreach (var entry in insertHandlers) {
-                if (!prevIdToIndexMap.ContainsKey(AttrStateId[entry.Key])) {
+                if (!prevStateIds.ContainsKey(AttrStateId[entry.Key])) {
                     entry.Value(new Element(this, entry.Key));
                 }
             }
+            insertHandlers.Clear();
         }
+
+        
+        private List<KeyedValue<long, Action<ElementStateProxy>>> currRemoveHandlers = new List<KeyedValue<long, Action<ElementStateProxy>>>();
+        private List<KeyedValue<long, Action<ElementStateProxy>>> prevRemoveHandlers = new List<KeyedValue<long, Action<ElementStateProxy>>>();
+
+        internal void AddRemoveHandler(long stateId, Action<ElementStateProxy> handler)
+        {
+            currRemoveHandlers.Add(new KeyedValue<long, Action<ElementStateProxy>>(stateId, handler));
+        }
+        private void RunRemoveHandlers()
+        {
+            foreach (var entry in prevRemoveHandlers) {
+                if (!currStateIds.ContainsKey(entry.Key)) {
+                    var domain = prevStateIds[entry.Key];
+                    entry.Value(new ElementStateProxy(entry.Key, domain.Storage));
+                }
+            }
+            prevRemoveHandlers.Clear();
+
+            var temp = currRemoveHandlers;
+            currRemoveHandlers = prevRemoveHandlers;
+            prevRemoveHandlers = temp;
+        }
+
+
 
         #region Ascent/descent traversal
         private struct TraverseEntry<TKey> : IComparable<TraverseEntry<TKey>>
@@ -451,14 +461,7 @@ namespace NeoGui.Core
         {
             treeAscentHandlers.Add(new TraverseEntry<int>(AttrLevel[elemIndex], elemIndex, handler));
         }
-
-        private void ClearTraverseHandlers()
-        {
-            depthDescentHandlers.Clear();
-            depthAscentHandlers.Clear();
-            treeDescentHandlers.Clear();
-            treeAscentHandlers.Clear();
-        }
+        
         public void RunUpdateTraversals()
         {
             Input.PreUiUpdate();
@@ -473,6 +476,7 @@ namespace NeoGui.Core
             for (var i = depthDescentHandlers.Count - 1; i >= 0; --i) {
                 depthDescentHandlers[i].Handler(new Element(this, depthDescentHandlers[i].ElemIndex));
             }
+            depthDescentHandlers.Clear();
             RunPostPassHandlers();
 
             for (var i = 0; i < depthAscentHandlers.Count; ++i) { // rewrite now that we can know z-index
@@ -485,6 +489,7 @@ namespace NeoGui.Core
             for (var i = 0; i < depthAscentHandlers.Count; ++i) {
                 depthAscentHandlers[i].Handler(new Element(this, depthAscentHandlers[i].ElemIndex));
             }
+            depthAscentHandlers.Clear();
             RunPostPassHandlers();
 
             postPassHandlers.Clear();
@@ -492,6 +497,7 @@ namespace NeoGui.Core
             for (var i = 0; i < treeDescentHandlers.Count; ++i) {
                 treeDescentHandlers[i].Handler(new Element(this, treeDescentHandlers[i].ElemIndex));
             }
+            treeDescentHandlers.Clear();
             RunPostPassHandlers();
 
             postPassHandlers.Clear();
@@ -499,6 +505,7 @@ namespace NeoGui.Core
             for (var i = treeAscentHandlers.Count - 1; i >= 0; --i) {
                 treeAscentHandlers[i].Handler(new Element(this, treeAscentHandlers[i].ElemIndex));
             }
+            treeAscentHandlers.Clear();
             RunPostPassHandlers();
             
             Input.PostUiUpdate();

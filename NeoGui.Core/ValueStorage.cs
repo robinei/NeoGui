@@ -4,8 +4,37 @@ using System.Collections.Generic;
 
 namespace NeoGui.Core
 {
-    public class ValueStorage<TTypeCategory, TKey>
+    /// <summary>
+    /// Static members of generic classes are generated once for each combination of type arguments.
+    /// We exploit this to maintain a static mapping from types to integer values.
+    /// In fact we maintain several mappings: one per category type.
+    /// </summary>
+    internal static class TypeKeys<TCategory, T>
     {
+        public static readonly int Key = TypeKeyMap<TCategory>.KeyOf(typeof(T));
+    }
+    
+    // ReSharper disable once UnusedTypeParameter
+    internal static class TypeKeyMap<TCategory>
+    {
+        // ReSharper disable once StaticMemberInGenericType
+        private static readonly Dictionary<Type, int> Map = new Dictionary<Type, int>();
+
+        public static int KeyOf(Type type)
+        {
+            int key;
+            if (Map.TryGetValue(type, out key)) {
+                return key;
+            }
+            key = Map.Count;
+            Map[type] = key;
+            return key;
+        }
+    }
+
+    internal class ValueStorage<TTypeCategory, TKey>
+    {
+        // one dictionary per type of value, all stored in an array indexed by the TypeKeys integer
         private object[] dictionaries = new object[64];
 
         public bool HasValue<TValue>(TKey key)
@@ -16,6 +45,21 @@ namespace NeoGui.Core
             }
             var dict = (Dictionary<TKey, TValue>)dictionaries[typeKey];
             return dict != null && dict.ContainsKey(key);
+        }
+
+        public bool TryGetValue<TValue>(TKey key, out TValue value)
+        {
+            var typeKey = TypeKeys<TTypeCategory, TValue>.Key;
+            while (typeKey >= dictionaries.Length) {
+                value = default(TValue);
+                return false;
+            }
+            var dict = (Dictionary<TKey, TValue>)dictionaries[typeKey];
+            if (dict == null) {
+                value = default(TValue);
+                return false;
+            }
+            return dict.TryGetValue(key, out value);
         }
 
         public TValue GetValue<TValue>(TKey key, TValue defaultValue = default(TValue))

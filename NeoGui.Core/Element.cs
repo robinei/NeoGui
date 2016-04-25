@@ -43,14 +43,24 @@ namespace NeoGui.Core
         public void OnPassFinished(Action<Element> handler) { Context.RunAfterPass(Index, handler); }
 
         /// <summary>
-        /// Run when a node is inserted into the tree, after having not been in it for at least one frame.
+        /// Run when an element is inserted into the tree, after having not been in it for at least one frame.
         /// </summary>
         public void OnInserted(Action<Element> handler) { Context.AddInsertHandler(Index, handler); }
+
+        /// <summary>
+        /// Run when an element is removed from the tree, after having been in it for at least one frame.
+        /// Use this to clean up state, if necessary.
+        /// </summary>
+        public void OnRemoved(Action<ElementStateProxy> handler) { Context.AddRemoveHandler(Context.AttrStateId[Index], handler); }
 
 
         public bool Has<TComponent>()
         {
             return Context.DataStorage.HasValue<TComponent>(Index);
+        }
+        public bool TryGet<TComponent>(out TComponent value)
+        {
+            return Context.DataStorage.TryGetValue(Index, out value);
         }
         public TComponent Get<TComponent>(TComponent defaultValue = default(TComponent))
         {
@@ -70,6 +80,10 @@ namespace NeoGui.Core
         public bool HasState<TState>()
         {
             return Context.AttrStateDomain[Index].Storage.HasValue<TState>(Context.AttrStateId[Index]);
+        }
+        public bool TryGetState<TState>(out TState value)
+        {
+            return Context.AttrStateDomain[Index].Storage.TryGetValue(Context.AttrStateId[Index], out value);
         }
         public TState GetState<TState>(TState defaultValue = default(TState))
         {

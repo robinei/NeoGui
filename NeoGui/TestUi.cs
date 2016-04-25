@@ -34,24 +34,24 @@ namespace NeoGui
         {
             ui.BeginFrame();
 
-            if (panelStateDomain == null) {
-                panelStateDomain = ui.CreateStateDomain();
-            }
-
             var root = ui.Root;
             root.Rect = new Rect(0, 0, windowWidth, windowHeight);
             Panel.AddProps(root);
 
             var toggleButton = TextButton.Create(root, "Toggle", e => {
                 panelVisible = !panelVisible;
-                if (!panelVisible) {
-                    panelStateDomain.Reset();
+                if (!panelVisible && panelStateDomain != null) {
+                    panelStateDomain.Dispose();
+                    panelStateDomain = null;
                 }
             });
             toggleButton.Scale = new Vec3(0.5f, 0.5f, 1) + new Vec3(1, 1, 0) * (float)Math.Abs(Math.Sin(ui.Input.Time));
             toggleButton.Rect = new Rect(70, 40, 100, 30);
 
             if (panelVisible) {
+                if (panelStateDomain == null) {
+                    panelStateDomain = ui.CreateStateDomain();
+                }
                 var panel = Panel.Create(root, Color.LightGray, PanelKey, panelStateDomain);
                 panel.Rect = new Rect(70, 80, 400, 600);
                 panel.ClipContent = true;
@@ -158,6 +158,7 @@ namespace NeoGui
                     var toggle = ToggleSwitch.Create(contentPanel, switchValue, e => switchValue = !switchValue);
                     toggle.Pos = new Vec2(100, 102);
                     toggle.OnInserted(e => Debug.WriteLine("switch inserted"));
+                    toggle.OnRemoved(e => Debug.WriteLine("switch removed"));
                 }
             }
 
