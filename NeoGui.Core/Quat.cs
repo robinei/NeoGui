@@ -114,10 +114,8 @@ namespace NeoGui.Core
 
         public static Quat FromAxisAngle(Vec3 axis, float angle) => FromAxisAngle(axis.X, axis.Y, axis.Z, angle);
 
-        public static Quat FromArc(Vec3 from, Vec3 to)
-        {
-            return new Quat(from.Cross(to), from.Dot(to) + (float)Math.Sqrt(from.SqrLength * to.SqrLength)).Normalized;
-        }
+        public static Quat FromArc(Vec3 from, Vec3 to) =>
+            new Quat(from.Cross(to), from.Dot(to) + (float)Math.Sqrt(from.SqrLength * to.SqrLength)).Normalized;
 
         public void ToMatrix(out Mat4 m)
         {

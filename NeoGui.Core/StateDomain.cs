@@ -5,10 +5,7 @@ namespace NeoGui.Core
 {
     public class StateDomain : IDisposable
     {
-        public void Dispose()
-        {
-            context.RelinquishStateDomain(this);
-        }
+        public void Dispose() => context.RelinquishStateDomain(this);
 
 
         private struct Entry

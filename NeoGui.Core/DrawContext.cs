@@ -35,9 +35,6 @@ namespace NeoGui.Core
             });
         }
 
-        public Vec2 TextSize(string text, int fontId = 0)
-        {
-            return Context.GetTextSize(text, fontId);
-        }
+        public Vec2 TextSize(string text, int fontId = 0) => Context.GetTextSize(text, fontId);
     }
 }

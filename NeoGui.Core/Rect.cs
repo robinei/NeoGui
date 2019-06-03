@@ -9,23 +9,23 @@ namespace NeoGui.Core
 
         public float X
         {
-            get { return Pos.X; }
-            set { Pos.X = value; }
+            get => Pos.X;
+            set => Pos.X = value;
         }
         public float Y
         {
-            get { return Pos.Y; }
-            set { Pos.Y = value; }
+            get => Pos.Y;
+            set => Pos.Y = value;
         }
         public float Width
         {
-            get { return Size.X; }
-            set { Size.X = value; }
+            get => Size.X;
+            set => Size.X = value;
         }
         public float Height
         {
-            get { return Size.Y; }
-            set { Size.Y = value; }
+            get => Size.Y;
+            set => Size.Y = value;
         }
 
         public Rect(Vec2 pos, Vec2 size)

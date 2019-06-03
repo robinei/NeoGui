@@ -23,9 +23,6 @@ namespace NeoGui.Core
             Value = default;
         }
 
-        public int CompareTo(KeyedValue<TKey, TValue> other)
-        {
-            return Key.CompareTo(other.Key);
-        }
+        public int CompareTo(KeyedValue<TKey, TValue> other) => Key.CompareTo(other.Key);
     }
 }

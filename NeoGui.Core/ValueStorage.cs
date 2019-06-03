@@ -50,7 +50,7 @@ namespace NeoGui.Core
         public bool TryGetValue<TValue>(TKey key, out TValue value)
         {
             var typeKey = TypeKeys<TTypeCategory, TValue>.Key;
-            while (typeKey >= dictionaries.Length) {
+            if (typeKey >= dictionaries.Length) {
                 value = default;
                 return false;
             }
@@ -65,7 +65,7 @@ namespace NeoGui.Core
         public TValue GetValue<TValue>(TKey key, TValue defaultValue = default)
         {
             var typeKey = TypeKeys<TTypeCategory, TValue>.Key;
-            while (typeKey >= dictionaries.Length) {
+            if (typeKey >= dictionaries.Length) {
                 return defaultValue;
             }
             var dict = (Dictionary<TKey, TValue>)dictionaries[typeKey];

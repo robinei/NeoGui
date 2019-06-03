@@ -16,26 +16,10 @@
             this.stateStorage = stateStorage;
         }
 
-        public bool HasState<TState>()
-        {
-            return stateStorage.HasValue<TState>(stateId);
-        }
-        public bool TryGetState<TState>(out TState value)
-        {
-            return stateStorage.TryGetValue(stateId, out value);
-        }
-        public TState GetState<TState>(TState defaultValue = default)
-        {
-            return stateStorage.GetValue(stateId, defaultValue);
-        }
-        public TState GetOrCreateState<TState>()
-            where TState: new()
-        {
-            return stateStorage.GetOrCreateValue<TState>(stateId);
-        }
-        public void SetState<TState>(TState value)
-        {
-            stateStorage.SetValue(stateId, value);
-        }
+        public bool HasState<TState>() => stateStorage.HasValue<TState>(stateId);
+        public bool TryGetState<TState>(out TState value) => stateStorage.TryGetValue(stateId, out value);
+        public TState GetState<TState>(TState defaultValue = default) => stateStorage.GetValue(stateId, defaultValue);
+        public TState GetOrCreateState<TState>() where TState: new() => stateStorage.GetOrCreateValue<TState>(stateId);
+        public void SetState<TState>(TState value) => stateStorage.SetValue(stateId, value);
     }
 }

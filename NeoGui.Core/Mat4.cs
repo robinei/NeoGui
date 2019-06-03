@@ -30,24 +30,20 @@
             M44 = a.M41 * b.M14 + a.M42 * b.M24 + a.M43 * b.M34 + a.M44 * b.M44;
         }
 
-        public Vec4 Mul(Vec4 v)
-        {
-            return new Vec4(
+        public Vec4 Mul(Vec4 v) =>
+            new Vec4(
                 M11 * v.X + M12 * v.Y + M13 * v.Z + M14 * v.W,
                 M21 * v.X + M22 * v.Y + M23 * v.Z + M24 * v.W,
                 M31 * v.X + M32 * v.Y + M33 * v.Z + M34 * v.W,
                 M41 * v.X + M42 * v.Y + M43 * v.Z + M44 * v.W
             );
-        }
 
-        public Vec3 Mul(Vec3 v)
-        {
-            return new Vec3(
+        public Vec3 Mul(Vec3 v) =>
+            new Vec3(
                 M11 * v.X + M12 * v.Y + M13 * v.Z + M14,
                 M21 * v.X + M22 * v.Y + M23 * v.Z + M24,
                 M31 * v.X + M32 * v.Y + M33 * v.Z + M34
             );
-        }
 
         public void ToTranspose(out Mat4 m)
         {
@@ -72,9 +68,7 @@
             m.M44 = M44;
         }
 
-        public override string ToString()
-        {
-            return $"{{M11:{M11} M12:{M12} M13:{M13} M14:{M14}}} {{M21:{M21} M22:{M22} M23:{M23} M24:{M24}}} {{M31:{M31} M32:{M32} M33:{M33} M34:{M34}}} {{M41:{M41} M42:{M42} M43:{M43} M44:{M44}}}";
-        }
+        public override string ToString() =>
+            $"{{M11:{M11} M12:{M12} M13:{M13} M14:{M14}}} {{M21:{M21} M22:{M22} M23:{M23} M24:{M24}}} {{M31:{M31} M32:{M32} M33:{M33} M34:{M34}}} {{M41:{M41} M42:{M42} M43:{M43} M44:{M44}}}";
     }
 }
