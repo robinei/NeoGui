@@ -51,10 +51,10 @@ namespace NeoGui.Core
         public void GetAxes(out Vec3 ax, out Vec3 ay, out Vec3 az)
         {
             Mat4 m;
-		    Rotation.ToMatrix(out m);
-		    ax = new Vec3(m.M11, m.M21, m.M31);
-		    ay = new Vec3(m.M12, m.M22, m.M32);
-		    az = new Vec3(m.M13, m.M23, m.M33);
+            Rotation.ToMatrix(out m);
+            ax = new Vec3(m.M11, m.M21, m.M31);
+            ay = new Vec3(m.M12, m.M22, m.M32);
+            az = new Vec3(m.M13, m.M23, m.M33);
         }
     }
 }
