@@ -5,7 +5,7 @@ namespace NeoGui.Core
     /// <summary>
     /// Use for sorting key plus associated value when only the key matters for sorting order.
     /// </summary>
-    public struct KeyedValue<TKey, TValue> : IComparable<KeyedValue<TKey, TValue>>
+    public readonly struct KeyedValue<TKey, TValue> : IComparable<KeyedValue<TKey, TValue>>
         where TKey: IComparable<TKey>
     {
         public readonly TKey Key;
