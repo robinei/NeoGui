@@ -223,14 +223,12 @@ namespace NeoGui.Core
 
         
         // mapping of (z-index, level) -> element index, to be sorted and used to determine rendering order
-        private readonly List<KeyedValue<Pair<int, int>, int>> bottomToTopIndex = new List<KeyedValue<Pair<int, int>, int>>();
+        private readonly List<KeyedValue<(int, int), int>> bottomToTopIndex = new List<KeyedValue<(int, int), int>>();
         private void CalcBottomToTopIndex()
         {
             bottomToTopIndex.Clear();
             for (var i = 0; i < ElementCount; ++i) {
-                bottomToTopIndex.Add(
-                    new KeyedValue<Pair<int, int>, int>(
-                        new Pair<int, int>(AttrZIndex[i], AttrLevel[i]), i));
+                bottomToTopIndex.Add(new KeyedValue<(int, int), int>((AttrZIndex[i], AttrLevel[i]), i));
             }
             bottomToTopIndex.Sort();
         }
