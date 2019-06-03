@@ -62,7 +62,7 @@ namespace NeoGui.Core
         {
             return Context.DataStorage.TryGetValue(Index, out value);
         }
-        public TComponent Get<TComponent>(TComponent defaultValue = default(TComponent))
+        public TComponent Get<TComponent>(TComponent defaultValue = default)
         {
             return Context.DataStorage.GetValue(Index, defaultValue);
         }
@@ -85,7 +85,7 @@ namespace NeoGui.Core
         {
             return Context.AttrStateDomain[Index].Storage.TryGetValue(Context.AttrStateId[Index], out value);
         }
-        public TState GetState<TState>(TState defaultValue = default(TState))
+        public TState GetState<TState>(TState defaultValue = default)
         {
             return Context.AttrStateDomain[Index].Storage.GetValue(Context.AttrStateId[Index], defaultValue);
         }
@@ -98,7 +98,7 @@ namespace NeoGui.Core
         {
             Context.AttrStateDomain[Index].Storage.SetValue(Context.AttrStateId[Index], value);
         }
-        public TState FindState<TState>(TState defaultValue = default(TState))
+        public TState FindState<TState>(TState defaultValue = default)
         {
             var elem = this;
             while (true) {

@@ -51,18 +51,18 @@ namespace NeoGui.Core
         {
             var typeKey = TypeKeys<TTypeCategory, TValue>.Key;
             while (typeKey >= dictionaries.Length) {
-                value = default(TValue);
+                value = default;
                 return false;
             }
             var dict = (Dictionary<TKey, TValue>)dictionaries[typeKey];
             if (dict == null) {
-                value = default(TValue);
+                value = default;
                 return false;
             }
             return dict.TryGetValue(key, out value);
         }
 
-        public TValue GetValue<TValue>(TKey key, TValue defaultValue = default(TValue))
+        public TValue GetValue<TValue>(TKey key, TValue defaultValue = default)
         {
             var typeKey = TypeKeys<TTypeCategory, TValue>.Key;
             while (typeKey >= dictionaries.Length) {

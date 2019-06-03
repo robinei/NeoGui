@@ -20,7 +20,7 @@ namespace NeoGui.Core
         public KeyedValue(TKey key)
         {
             Key = key;
-            Value = default(TValue);
+            Value = default;
         }
 
         public int CompareTo(KeyedValue<TKey, TValue> other)

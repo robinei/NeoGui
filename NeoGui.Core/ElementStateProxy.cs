@@ -24,7 +24,7 @@
         {
             return stateStorage.TryGetValue(stateId, out value);
         }
-        public TState GetState<TState>(TState defaultValue = default(TState))
+        public TState GetState<TState>(TState defaultValue = default)
         {
             return stateStorage.GetValue(stateId, defaultValue);
         }
