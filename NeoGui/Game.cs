@@ -6,7 +6,6 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using NeoGui.Core;
-using OpenTK.Graphics.OpenGL;
 using Color = Microsoft.Xna.Framework.Color;
 
 namespace NeoGui
@@ -118,7 +117,7 @@ namespace NeoGui
                 false,
                 GraphicsDevice.PresentationParameters.BackBufferFormat,
                 DepthFormat.Depth24,
-                1,
+                2,
                 RenderTargetUsage.PreserveContents);
             IsMouseVisible = true;
         }
