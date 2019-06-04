@@ -58,8 +58,8 @@ namespace NeoGui
             graphics = new GraphicsDeviceManager(this);
             graphics.PreferredBackBufferWidth = 1024;
             graphics.PreferredBackBufferHeight = 768;
-            graphics.ApplyChanges();
             graphics.SynchronizeWithVerticalRetrace = false;
+            graphics.ApplyChanges();
             IsFixedTimeStep = false;
             Content.RootDirectory = "Content";
 
