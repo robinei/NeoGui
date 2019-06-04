@@ -20,7 +20,7 @@ namespace NeoGui.Toolkit
             if (backgroundColor != null) {
                 elem.Set(new PanelBackground { Color = backgroundColor.Value });
             }
-            elem.Draw = Draw;
+            elem.Draw = dc => Draw(dc);
         }
 
         public static void Draw(DrawContext dc)

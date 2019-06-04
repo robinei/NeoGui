@@ -30,8 +30,8 @@ namespace NeoGui.Toolkit
                 label.Set(alignment.Value);
             }
             label.SizeToFit = true;
-            label.Measure = Measure;
-            label.Draw = Draw;
+            label.Measure = e => Measure(e);
+            label.Draw = dc => Draw(dc);
             return label;
         }
 

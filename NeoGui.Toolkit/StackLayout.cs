@@ -11,8 +11,8 @@ namespace NeoGui.Toolkit
     {
         public static void AddProps(Element elem)
         {
-            elem.Measure = Measure;
-            elem.Layout = Layout;
+            elem.Measure = e => Measure(e);
+            elem.Layout = e => Layout(e);
         }
 
         public static void Measure(Element elem)

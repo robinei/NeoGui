@@ -54,9 +54,9 @@ namespace NeoGui.Toolkit
         {
             var scrollArea = Element.Create(parent, key, domain);
             scrollArea.ClipContent = true;
-            scrollArea.Layout = Layout;
-            scrollArea.OnInserted(OnInserted);
-            scrollArea.OnDepthDescent(OnDepthDescent);
+            scrollArea.Layout = e => Layout(e);
+            scrollArea.OnInserted(e => OnInserted(e));
+            scrollArea.OnDepthDescent(e => OnDepthDescent(e));
             var state = scrollArea.GetOrCreateState<ScrollAreaState>();
             state.Flags = flags;
 
@@ -66,7 +66,7 @@ namespace NeoGui.Toolkit
 
             var overlay = Element.Create(scrollArea);
             overlay.Name = "ScrollArea.Overlay";
-            overlay.Draw = DrawOverlay;
+            overlay.Draw = dc => DrawOverlay(dc);
             overlay.ZIndex = 1;
 
             return scrollArea;
@@ -139,7 +139,7 @@ namespace NeoGui.Toolkit
                 }
             }
 
-            scrollArea.OnPassFinished(Update);
+            scrollArea.OnPassFinished(e => Update(e));
         }
 
         private static void Update(Element scrollArea)

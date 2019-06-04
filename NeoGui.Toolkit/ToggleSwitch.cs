@@ -16,9 +16,9 @@ namespace NeoGui.Toolkit
             var toggleSwitch = Element.Create(parent);
             ButtonBehavior.Add(toggleSwitch);
             toggleSwitch.Size = new Vec2(36, 16);
-            toggleSwitch.Draw = Draw;
-            toggleSwitch.OnInserted(OnInserted);
-            toggleSwitch.OnDepthDescent(OnDepthDescent);
+            toggleSwitch.Draw = dc => Draw(dc);
+            toggleSwitch.OnInserted(e => OnInserted(e));
+            toggleSwitch.OnDepthDescent(e => OnDepthDescent(e));
             if (onToggled != null) {
                 toggleSwitch.Set(new ButtonCallback { OnClick = onToggled });
             }

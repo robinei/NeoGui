@@ -14,7 +14,7 @@ namespace NeoGui.Toolkit
     {
         public static void Add(Element elem)
         {
-            elem.OnDepthDescent(OnDepthDescent);
+            elem.OnDepthDescent(e => OnDepthDescent(e));
         }
 
         private static void OnDepthDescent(Element e)
@@ -50,7 +50,7 @@ namespace NeoGui.Toolkit
             var button = Label.Create(parent, text, Color.White, TextAlignment.Center);
             ButtonBehavior.Add(button);
             button.SizeToFit = false;
-            button.Draw = Draw;
+            button.Draw = dc => Draw(dc);
             if (onClick != null) {
                 button.Set(new ButtonCallback { OnClick = onClick });
             }

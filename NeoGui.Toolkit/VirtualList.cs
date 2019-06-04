@@ -14,7 +14,7 @@ namespace NeoGui.Toolkit
             StateDomain domain = null)
         {
             var virtualList = ScrollArea.Create(parent, ScrollAreaFlags.BounceY | ScrollAreaFlags.FillX, key: key, domain: domain);
-            virtualList.Layout = Layout;
+            virtualList.Layout = e => Layout(e);
             
             var state = virtualList.GetOrCreateState<ScrollAreaState>();
             var content = ScrollArea.GetContentPanel(virtualList);
