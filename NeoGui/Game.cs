@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -224,6 +225,8 @@ namespace NeoGui
             GraphicsDevice.SetRenderTarget(null);
         }
 
+        private readonly StringBuilder textBuilder = new StringBuilder();
+        
         protected override void Draw(GameTime gameTime)
         {
             var viewport = GraphicsDevice.Viewport;
@@ -251,10 +254,16 @@ namespace NeoGui
             }*/
             
             var memMegaBytes = GC.GetTotalMemory(false) / (1024.0 * 1024.0);
-            string fps = $"fps: {frameRate}  mem: {memMegaBytes:F1} MB";
+            textBuilder
+                .Clear()
+                .Append("fps: ")
+                .Append(frameRate)
+                .Append(", mem: ")
+                .Append((int)(memMegaBytes * 10) / 10.0)
+                .Append(" MB");
            // spriteBatch.Begin();
-            spriteBatch.DrawString(font, fps, new Vector2(5, 1), Color.White);
-            spriteBatch.DrawString(font, fps, new Vector2(4, 0), Color.Black);
+            spriteBatch.DrawString(font, textBuilder, new Vector2(5, 1), Color.White);
+            spriteBatch.DrawString(font, textBuilder, new Vector2(4, 0), Color.Black);
             spriteBatch.End();
 
             base.Draw(gameTime);
