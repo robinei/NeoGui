@@ -163,7 +163,7 @@ namespace NeoGui
             }
 
             var virtualList = VirtualList.Create(root, 50, 40.0f, (parent, index) => {
-                var label = Label.Create(parent, "Row " + index, alignment: (TextAlignment)(index % 3));
+                var label = Label.Create(parent, "Row", alignment: (TextAlignment)(index % 3));
                 return label;
             }, ListKey);
             virtualList.Rect = new Rect(550, 80, 100, 600);
