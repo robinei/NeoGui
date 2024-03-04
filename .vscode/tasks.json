@@ -5,32 +5,14 @@
             "label": "build",
             "command": "dotnet",
             "type": "process",
+            "group": "build",
             "args": [
-                "build",
-                "${workspaceFolder}/NeoGui/NeoGui.csproj"
+              "build",
+              "${workspaceFolder}/NeoGui.sln",
+              "/property:GenerateFullPaths=true",
+              "/consoleloggerparameters:NoSummary"
             ],
-            "problemMatcher": "$tsc"
-        },
-        {
-            "label": "publish",
-            "command": "dotnet",
-            "type": "process",
-            "args": [
-                "publish",
-                "${workspaceFolder}/NeoGui/NeoGui.csproj"
-            ],
-            "problemMatcher": "$tsc"
-        },
-        {
-            "label": "watch",
-            "command": "dotnet",
-            "type": "process",
-            "args": [
-                "watch",
-                "run",
-                "${workspaceFolder}/NeoGui/NeoGui.csproj"
-            ],
-            "problemMatcher": "$tsc"
-        }
+            "problemMatcher": "$msCompile"
+          }
     ]
 }

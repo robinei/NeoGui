@@ -2,22 +2,23 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
-    <LangVersion>7.3</LangVersion>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
  
   <ItemGroup>
-    <MonoGameContentReference Include="**\*.mgcb" />
+    <MonoGameContentReference Include="**/*.mgcb" />
   </ItemGroup>
  
   <ItemGroup>  
-    <PackageReference Include="MonoGame.Content.Builder" Version="3.7.0.4" />
-    <PackageReference Include="MonoGame.Framework.DesktopGL.Core" Version="3.7.0.7" />
+    <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.1.303" />
+    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.1.303" />
   </ItemGroup>
  
   <ItemGroup>
-    <ProjectReference Include="..\NeoGui.Core\NeoGui.Core.csproj" />
-    <ProjectReference Include="..\NeoGui.Toolkit\NeoGui.Toolkit.csproj" />
+    <ProjectReference Include="../NeoGui.Core/NeoGui.Core.csproj" />
+    <ProjectReference Include="../NeoGui.Toolkit/NeoGui.Toolkit.csproj" />
   </ItemGroup>
   
 </Project>

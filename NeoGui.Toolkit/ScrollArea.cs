@@ -48,9 +48,9 @@ namespace NeoGui.Toolkit
         public static Element Create(
             Element parent, 
             ScrollAreaFlags flags = ScrollAreaFlags.BounceX | ScrollAreaFlags.BounceY,
-            Func<Element, Element> contentCreator = null,
-            object key = null,
-            StateDomain domain = null)
+            Func<Element, Element>? contentCreator = null,
+            object? key = null,
+            StateDomain? domain = null)
         {
             var scrollArea = Element.Create(parent, key, domain);
             scrollArea.ClipContent = true;
@@ -74,14 +74,12 @@ namespace NeoGui.Toolkit
 
         public static Element GetContentPanel(Element scrollArea)
         {
-            // ReSharper disable once PossibleInvalidOperationException
-            return scrollArea.FindChild(e => e.Name == "ScrollArea.Content").Value;
+            return scrollArea.FindChild(e => e.Name == "ScrollArea.Content") ?? throw new Exception("cannot find ScrollArea.Content");
         }
 
         private static Element GetOverlayPanel(Element scrollArea)
         {
-            // ReSharper disable once PossibleInvalidOperationException
-            return scrollArea.FindChild(e => e.Name == "ScrollArea.Overlay").Value;
+            return scrollArea.FindChild(e => e.Name == "ScrollArea.Overlay") ?? throw new Exception("cannot find ScrollArea.Overlay");
         }
 
         public static void Layout(Element scrollArea)

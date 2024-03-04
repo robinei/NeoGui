@@ -38,9 +38,9 @@ namespace NeoGui.Core
         internal Rect[] AttrRect = new Rect[InitialArraySize];
         internal Rect[] AttrBoundingRect = new Rect[InitialArraySize]; // axis aligned bounding box in world coordinates
         internal Rect[] AttrClipRect = new Rect[InitialArraySize];
-        internal Action<DrawContext>[] AttrDrawFunc = new Action<DrawContext>[InitialArraySize];
-        internal Action<Element>[] AttrMeasureFunc = new Action<Element>[InitialArraySize];
-        internal Action<Element>[] AttrLayoutFunc = new Action<Element>[InitialArraySize];
+        internal Action<DrawContext>?[] AttrDrawFunc = new Action<DrawContext>?[InitialArraySize];
+        internal Action<Element>?[] AttrMeasureFunc = new Action<Element>?[InitialArraySize];
+        internal Action<Element>?[] AttrLayoutFunc = new Action<Element>?[InitialArraySize];
 
         // extra data which we don't deign to make an array for above goes here...
         internal readonly ValueStorage<DataKeys, int> DataStorage = new ValueStorage<DataKeys, int>();
@@ -104,7 +104,7 @@ namespace NeoGui.Core
         
         public Element Root => new Element(this, 0);
 
-        internal Element CreateElement(Element parent, object key, StateDomain domain)
+        internal Element CreateElement(Element parent, object? key, StateDomain? domain)
         {
             if (ElementCount == AttrStateId.Length) {
                 var newLength = AttrStateId.Length * 2;
@@ -280,7 +280,7 @@ namespace NeoGui.Core
                 Delegate.DrawDot(AttrWorldTransform[elemIndex].ApplyForward(Vec3.Zero));
 
                 drawContext.Target = new Element(this, elemIndex);
-                AttrDrawFunc[elemIndex](drawContext);
+                AttrDrawFunc[elemIndex]?.Invoke(drawContext);
             }
 
             DirtyDrawCommandBuffers.Clear();

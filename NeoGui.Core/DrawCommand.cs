@@ -93,7 +93,6 @@ namespace NeoGui.Core
         private struct ComparisonHelper
         {
 #pragma warning disable 649
-            // ReSharper disable InconsistentNaming
             public long _0;
             public long _8;
             public long _16;
@@ -101,7 +100,6 @@ namespace NeoGui.Core
             public long _32;
             public long _40;
             public long _48;
-            // ReSharper restore InconsistentNaming
 #pragma warning restore 649
         }
     }

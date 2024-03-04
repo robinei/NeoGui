@@ -14,10 +14,8 @@ namespace NeoGui.Core
         public static readonly int Key = TypeKeyMap<TCategory>.KeyOf(typeof(T));
     }
     
-    // ReSharper disable once UnusedTypeParameter
     internal static class TypeKeyMap<TCategory>
     {
-        // ReSharper disable once StaticMemberInGenericType
         private static readonly Dictionary<Type, int> Map = new Dictionary<Type, int>();
 
         public static int KeyOf(Type type)
@@ -47,7 +45,7 @@ namespace NeoGui.Core
             return dict != null && dict.ContainsKey(key);
         }
 
-        public bool TryGetValue<TValue>(TKey key, out TValue value)
+        public bool TryGetValue<TValue>(TKey key, out TValue? value)
         {
             var typeKey = TypeKeys<TTypeCategory, TValue>.Key;
             if (typeKey >= dictionaries.Length) {
@@ -62,7 +60,19 @@ namespace NeoGui.Core
             return dict.TryGetValue(key, out value);
         }
 
-        public TValue GetValue<TValue>(TKey key, TValue defaultValue = default)
+        public TValue GetValue<TValue>(TKey key)
+        {
+            var typeKey = TypeKeys<TTypeCategory, TValue>.Key;
+            if (typeKey < dictionaries.Length) {
+                var dict = (Dictionary<TKey, TValue>?)dictionaries[typeKey];
+                if (dict != null && dict.TryGetValue(key, out var value)) {
+                    return value;
+                }
+            }
+            throw new Exception("value not found");
+        }
+
+        public TValue GetValue<TValue>(TKey key, TValue defaultValue)
         {
             var typeKey = TypeKeys<TTypeCategory, TValue>.Key;
             if (typeKey >= dictionaries.Length) {
@@ -72,8 +82,7 @@ namespace NeoGui.Core
             if (dict == null) {
                 return defaultValue;
             }
-            TValue value;
-            return dict.TryGetValue(key, out value) ? value : defaultValue;
+            return dict.TryGetValue(key, out var value) ? value : defaultValue;
         }
 
         public TValue GetOrCreateValue<TValue>(TKey key)

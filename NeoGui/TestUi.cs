@@ -16,14 +16,14 @@ namespace NeoGui
 
         private class TestCount
         {
-            public int Value;
-            public string StringValue;
+            public int Value = 0;
+            public string StringValue = "";
         }
 
         private static bool panelVisible = true;
-        private static StateDomain panelStateDomain;
+        private static StateDomain? panelStateDomain = null;
 
-        private static bool switchValue;
+        private static bool switchValue = false;
 
         private static readonly object PanelKey = new object();
         private static readonly object ListKey = new object();

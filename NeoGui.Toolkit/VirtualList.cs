@@ -10,8 +10,8 @@ namespace NeoGui.Toolkit
             int itemCount,
             float itemHeight,
             Func<Element, int, Element> createItem,
-            object key = null,
-            StateDomain domain = null)
+            object? key = null,
+            StateDomain? domain = null)
         {
             var virtualList = ScrollArea.Create(parent, ScrollAreaFlags.BounceY | ScrollAreaFlags.FillX, key: key, domain: domain);
             virtualList.Layout = e => Layout(e);

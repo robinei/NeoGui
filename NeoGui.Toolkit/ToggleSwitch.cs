@@ -11,7 +11,7 @@ namespace NeoGui.Toolkit
 
     public static class ToggleSwitch
     {
-        public static Element Create(Element parent, bool on = false, Action<Element> onToggled = null)
+        public static Element Create(Element parent, bool on = false, Action<Element>? onToggled = null)
         {
             var toggleSwitch = Element.Create(parent);
             ButtonBehavior.Add(toggleSwitch);

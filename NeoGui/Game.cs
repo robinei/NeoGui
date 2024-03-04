@@ -22,15 +22,15 @@ namespace NeoGui
             DepthBufferEnable = false,
             DepthBufferWriteEnable = false
         };
-        private RenderTarget2D renderTarget;
-        private SpriteBatch spriteBatch;
-        private BasicEffect basicEffect;
-        private SpriteFont font;
-        private Texture2D pixel;
+        private RenderTarget2D renderTarget = default!;
+        private SpriteBatch spriteBatch = default!;
+        private BasicEffect basicEffect = default!;
+        private SpriteFont font = default!;
+        private Texture2D pixel = default!;
         
         private bool inputInited;
         private readonly InputState input = new InputState();
-        private NeoGuiContext ui;
+        private NeoGuiContext ui = default!;
 
         private int frameRate = 0;
         private int frameCounter = 0;

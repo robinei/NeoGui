@@ -2,7 +2,7 @@ namespace NeoGui.Core
 {
     public class DrawContext
     {
-        internal DrawCommandBuffer CommandBuffer { get; set; }
+        internal DrawCommandBuffer CommandBuffer { get; set; } = new DrawCommandBuffer();
 
         public Element Target { get; internal set; }
         public NeoGuiContext Context => Target.Context;

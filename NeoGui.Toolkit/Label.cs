@@ -14,7 +14,8 @@ namespace NeoGui.Toolkit
 
     public static class Label
     {
-        private static readonly LabelColor DefaultColor = new LabelColor {Value = Color.Black};
+        private static readonly LabelText DefaultText = new() { Value = "" };
+        private static readonly LabelColor DefaultColor = new() { Value = Color.Black };
         private const TextAlignment DefaultAlignment = TextAlignment.Left;
 
         public static Element Create(Element parent, string text, Color? color = null, TextAlignment? alignment = null)
@@ -38,7 +39,7 @@ namespace NeoGui.Toolkit
         public static void Measure(Element label)
         {
             if (label.SizeToFit) {
-                var text = label.Get<LabelText>().Value;
+                var text = label.Get(DefaultText).Value;
                 if (text != null) {
                     label.Size = label.Context.Delegate.TextSize(text, 0); // TODO: fontId
                 }
@@ -48,7 +49,7 @@ namespace NeoGui.Toolkit
         public static void Draw(DrawContext dc)
         {
             var label = dc.Target;
-            var text = label.Get<LabelText>().Value;
+            var text = label.Get(DefaultText).Value;
             if (string.IsNullOrEmpty(text)) {
                 return;
             }

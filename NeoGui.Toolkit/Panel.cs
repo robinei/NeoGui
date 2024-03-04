@@ -8,7 +8,7 @@ namespace NeoGui.Toolkit
     {
         private static readonly PanelBackground DefaultPanelBackground = new PanelBackground {Color = Color.White};
 
-        public static Element Create(Element parent, Color? backgroundColor = null, object key = null, StateDomain domain = null)
+        public static Element Create(Element parent, Color? backgroundColor = null, object? key = null, StateDomain? domain = null)
         {
             var panel = Element.Create(parent, key, domain);
             AddProps(panel, backgroundColor);

@@ -12,6 +12,8 @@ namespace NeoGui.Toolkit
 
     public static class ButtonBehavior
     {
+        private static readonly ButtonCallback DefaultCallback = new() { OnClick = (e) => { } };
+
         public static void Add(Element elem)
         {
             elem.OnDepthDescent(e => OnDepthDescent(e));
@@ -28,7 +30,7 @@ namespace NeoGui.Toolkit
             if (state.MousePressed) {
                 if (input.WasMouseButtonReleased(MouseButton.Left)) {
                     if (e.IsUnderMouse) {
-                        e.Get<ButtonCallback>().OnClick?.Invoke(e);
+                        e.Get(DefaultCallback).OnClick(e);
                     }
                     state.MousePressed = false;
                 }
@@ -45,7 +47,7 @@ namespace NeoGui.Toolkit
 
     public static class TextButton
     {
-        public static Element Create(Element parent, string text, Action<Element> onClick = null)
+        public static Element Create(Element parent, string text, Action<Element>? onClick = null)
         {
             var button = Label.Create(parent, text, Color.White, TextAlignment.Center);
             ButtonBehavior.Add(button);

@@ -19,7 +19,7 @@ namespace NeoGui.Core
             Index = index;
         }
 
-        public static Element Create(Element parent, object key = null, StateDomain domain = null) =>
+        public static Element Create(Element parent, object? key = null, StateDomain? domain = null) =>
             parent.Context.CreateElement(parent, key, domain);
         
         public bool IsRoot => Index == 0;
@@ -53,23 +53,38 @@ namespace NeoGui.Core
 
 
         public bool Has<TComponent>() => Context.DataStorage.HasValue<TComponent>(Index);
-        public bool TryGet<TComponent>(out TComponent value) => Context.DataStorage.TryGetValue(Index, out value);
-        public TComponent Get<TComponent>(TComponent defaultValue = default) => Context.DataStorage.GetValue(Index, defaultValue);
+        public bool TryGet<TComponent>(out TComponent? value) => Context.DataStorage.TryGetValue(Index, out value);
+        public TComponent Get<TComponent>() => Context.DataStorage.GetValue<TComponent>(Index);
+        public TComponent Get<TComponent>(TComponent defaultValue) => Context.DataStorage.GetValue(Index, defaultValue);
         public TComponent GetOrCreate<TComponent>() where TComponent: new() => Context.DataStorage.GetOrCreateValue<TComponent>(Index);
         public void Set<TComponent>(TComponent value) => Context.DataStorage.SetValue(Index, value);
         
 
         public bool HasState<TState>() => Context.AttrStateDomain[Index].Storage.HasValue<TState>(Context.AttrStateId[Index]);
-        public bool TryGetState<TState>(out TState value) => Context.AttrStateDomain[Index].Storage.TryGetValue(Context.AttrStateId[Index], out value);
-        public TState GetState<TState>(TState defaultValue = default) => Context.AttrStateDomain[Index].Storage.GetValue(Context.AttrStateId[Index], defaultValue);
+        public bool TryGetState<TState>(out TState? value) => Context.AttrStateDomain[Index].Storage.TryGetValue(Context.AttrStateId[Index], out value);
+        public TState GetState<TState>() => Context.AttrStateDomain[Index].Storage.GetValue<TState>(Context.AttrStateId[Index]);
+        public TState GetState<TState>(TState defaultValue) => Context.AttrStateDomain[Index].Storage.GetValue(Context.AttrStateId[Index], defaultValue);
         public TState GetOrCreateState<TState>() where TState: new() => Context.AttrStateDomain[Index].Storage.GetOrCreateValue<TState>(Context.AttrStateId[Index]);
         public void SetState<TState>(TState value) => Context.AttrStateDomain[Index].Storage.SetValue(Context.AttrStateId[Index], value);
-        public TState FindState<TState>(TState defaultValue = default)
+        public TState FindState<TState>()
         {
             var elem = this;
             while (true) {
-                if (elem.HasState<TState>()) {
-                    return elem.GetState(defaultValue);
+                if (elem.TryGetState<TState>(out var state)) {
+                    return state!;
+                }
+                if (elem.IsRoot) {
+                    throw new Exception("state not found");
+                }
+                elem = elem.Parent;
+            }
+        }
+        public TState FindState<TState>(TState defaultValue)
+        {
+            var elem = this;
+            while (true) {
+                if (elem.TryGetState<TState>(out var state)) {
+                    return state!;
                 }
                 if (elem.IsRoot) {
                     return defaultValue;
@@ -168,9 +183,9 @@ namespace NeoGui.Core
         public ref Vec2 Pos => ref Context.AttrRect[Index].Pos;
         public ref Vec2 Size => ref Context.AttrRect[Index].Size;
         public ref readonly Rect ClipRect => ref Context.AttrClipRect[Index];
-        public ref Action<DrawContext> Draw => ref Context.AttrDrawFunc[Index];
-        public ref Action<Element> Measure => ref Context.AttrMeasureFunc[Index];
-        public ref Action<Element> Layout => ref Context.AttrLayoutFunc[Index];
+        public ref Action<DrawContext>? Draw => ref Context.AttrDrawFunc[Index];
+        public ref Action<Element>? Measure => ref Context.AttrMeasureFunc[Index];
+        public ref Action<Element>? Layout => ref Context.AttrLayoutFunc[Index];
         #endregion 
 
         #region Comparison and equality

@@ -9,6 +9,8 @@ namespace NeoGui.Toolkit
 
     public static class StackLayout
     {
+        private static readonly StackLayoutConfig DefaultConfig = new();
+
         public static void AddProps(Element elem)
         {
             elem.Measure = e => Measure(e);
@@ -28,7 +30,7 @@ namespace NeoGui.Toolkit
                 sumWidth += size.X;
                 sumHeight += size.Y;
             }
-            var config = elem.Get<StackLayoutConfig>();
+            var config = elem.Get(DefaultConfig);
             if (config.Horizontal) {
                 elem.Width = sumWidth;
                 elem.Height = maxHeight;
@@ -40,7 +42,7 @@ namespace NeoGui.Toolkit
 
         public static void Layout(Element elem)
         {
-            var config = elem.Get<StackLayoutConfig>();
+            var config = elem.Get(DefaultConfig);
             var clientSize = elem.Size;
             var offset = 0.0f;
             var axis = config.Horizontal ? 0 : 1;
