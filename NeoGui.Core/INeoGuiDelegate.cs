@@ -1,9 +1,7 @@
-namespace NeoGui.Core
-{
-    public interface INeoGuiDelegate
-    {
-        Vec2 TextSize(string text, int fontId);
+namespace NeoGui.Core;
 
-        void DrawDot(Vec3 p, Color? c = null);
-    }
+public interface INeoGuiDelegate {
+    Vec2 TextSize(string text, int fontId);
+
+    void DrawDot(Vec3 p, Color? c = null);
 }

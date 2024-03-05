@@ -1,33 +1,28 @@
-﻿using NeoGui.Core;
+﻿namespace NeoGui.Toolkit;
 
-namespace NeoGui.Toolkit
-{
-    public struct PanelBackground { public Color Color; }
+using NeoGui.Core;
 
-    public static class Panel
-    {
-        private static readonly PanelBackground DefaultPanelBackground = new PanelBackground {Color = Color.White};
+public struct PanelBackground { public Color Color; }
 
-        public static Element Create(Element parent, Color? backgroundColor = null, object? key = null, StateDomain? domain = null)
-        {
-            var panel = Element.Create(parent, key, domain);
-            AddProps(panel, backgroundColor);
-            return panel;
+public static class Panel {
+    private static readonly PanelBackground DefaultPanelBackground = new PanelBackground {Color = Color.White};
+
+    public static Element Create(Element parent, Color? backgroundColor = null, object? key = null, StateDomain? domain = null) {
+        var panel = Element.Create(parent, key, domain);
+        AddProps(panel, backgroundColor);
+        return panel;
+    }
+
+    public static void AddProps(Element elem, Color? backgroundColor = null) {
+        if (backgroundColor != null) {
+            elem.Set(new PanelBackground { Color = backgroundColor.Value });
         }
+        elem.Draw = Draw;
+    }
 
-        public static void AddProps(Element elem, Color? backgroundColor = null)
-        {
-            if (backgroundColor != null) {
-                elem.Set(new PanelBackground { Color = backgroundColor.Value });
-            }
-            elem.Draw = dc => Draw(dc);
-        }
-
-        public static void Draw(DrawContext dc)
-        {
-            var size = dc.Target.Size;
-            var color = dc.Target.Get(DefaultPanelBackground).Color;
-            dc.SolidRect(new Rect(size), color);
-        }
+    public static void Draw(DrawContext dc) {
+        var size = dc.Target.Size;
+        var color = dc.Target.Get(DefaultPanelBackground).Color;
+        dc.SolidRect(new Rect(size), color);
     }
 }

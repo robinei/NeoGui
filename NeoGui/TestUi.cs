@@ -1,175 +1,169 @@
+namespace NeoGui;
+
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using NeoGui.Core;
 using NeoGui.Toolkit;
 
-namespace NeoGui
-{
-    public static class TestUi
-    {
-        private class TestState
-        {
-            public int ActiveTab = 1;
-            public int NumButtons = 10;
+public static class TestUi {
+    private class TestState {
+        public int ActiveTab = 1;
+        public int NumButtons = 10;
+    }
+
+    private class TestCount {
+        public int Value = 0;
+        public string StringValue = string.Empty;
+    }
+
+    private static bool panelVisible = true;
+    private static StateDomain? panelStateDomain = null;
+    private static readonly Action<Element> onTogglePanel = e => {
+        panelVisible = !panelVisible;
+        if (!panelVisible && panelStateDomain != null) {
+            panelStateDomain.Dispose();
+            panelStateDomain = null;
         }
+    };
 
-        private class TestCount
-        {
-            public int Value = 0;
-            public string StringValue = "";
-        }
+    private static bool switchValue = false;
+    private static readonly Action<Element> onToggleSwitch = e => switchValue = !switchValue;
 
-        private static bool panelVisible = true;
-        private static StateDomain? panelStateDomain = null;
+    private static readonly object PanelKey = new();
+    private static readonly object ListKey = new();
+    private static readonly object Tab1Key = new();
+    private static readonly object Tab2Key = new();
 
-        private static bool switchValue = false;
+    public static void DoUi(NeoGuiContext ui, float windowWidth, float windowHeight) {
+        ui.BeginFrame();
 
-        private static readonly object PanelKey = new object();
-        private static readonly object ListKey = new object();
-        private static readonly object Tab1Key = new object();
-        private static readonly object Tab2Key = new object();
+        var root = ui.Root;
+        root.Rect = new Rect(0, 0, windowWidth, windowHeight);
+        Panel.AddProps(root);
 
-        public static void DoUi(NeoGuiContext ui, float windowWidth, float windowHeight)
-        {
-            ui.BeginFrame();
+        var toggleButton = TextButton.Create(root, "Toggle", onTogglePanel);
+        toggleButton.Scale = new Vec3(0.5f, 0.5f, 1) + new Vec3(1, 1, 0) * (float)Math.Abs(Math.Sin(ui.Input.Time));
+        toggleButton.Rect = new Rect(70, 40, 100, 30);
 
-            var root = ui.Root;
-            root.Rect = new Rect(0, 0, windowWidth, windowHeight);
-            Panel.AddProps(root);
+        if (panelVisible) {
+            panelStateDomain ??= ui.CreateStateDomain();
+            var panel = Panel.Create(root, Color.LightGray, PanelKey, panelStateDomain);
+            panel.Rect = new Rect(70, 80, 400, 600);
+            panel.ClipContent = true;
+            
+            var state = panel.GetOrCreateState<TestState>();
 
-            var toggleButton = TextButton.Create(root, "Toggle", e => {
-                panelVisible = !panelVisible;
-                if (!panelVisible && panelStateDomain != null) {
-                    panelStateDomain.Dispose();
-                    panelStateDomain = null;
-                }
+            var tabButton0 = TextButton.Create(panel, "Tab 0", e => {
+                e.FindState<TestState>().ActiveTab = 0;
             });
-            toggleButton.Scale = new Vec3(0.5f, 0.5f, 1) + new Vec3(1, 1, 0) * (float)Math.Abs(Math.Sin(ui.Input.Time));
-            toggleButton.Rect = new Rect(70, 40, 100, 30);
+            tabButton0.Disabled = state.ActiveTab == 0;
+            tabButton0.Rect = new Rect(0, 0, 100, 30);
 
-            if (panelVisible) {
-                if (panelStateDomain == null) {
-                    panelStateDomain = ui.CreateStateDomain();
-                }
-                var panel = Panel.Create(root, Color.LightGray, PanelKey, panelStateDomain);
-                panel.Rect = new Rect(70, 80, 400, 600);
-                panel.ClipContent = true;
-                
-                var state = panel.GetOrCreateState<TestState>();
+            var tabButton1 = TextButton.Create(panel, "Tab 1", e => {
+                e.FindState<TestState>().ActiveTab = 1;
+            });
+            tabButton1.Disabled = state.ActiveTab == 1;
+            tabButton1.Rect = new Rect(101, 0, 100, 30);
+            
+            if (state.ActiveTab == 0) {
+                var tab0 = Element.Create(panel, Tab1Key);
+                tab0.Rect = new Rect(0, 30, 300, 550);
 
-                var tabButton0 = TextButton.Create(panel, "Tab 0", e => {
-                    e.FindState<TestState>().ActiveTab = 0;
+                var titleLabel = Label.Create(tab0, "This is tab 0");
+                titleLabel.Pos = new Vec2(10, 10);
+                var buttonCountLabel = Label.Create(tab0, "Button count: " + state.NumButtons);
+                buttonCountLabel.Pos = new Vec2(10, 40);
+
+                var addButton = TextButton.Create(tab0, "Add 1", e => {
+                    e.FindState<TestState>().NumButtons++;
                 });
-                tabButton0.Disabled = state.ActiveTab == 0;
-                tabButton0.Rect = new Rect(0, 0, 100, 30);
-
-                var tabButton1 = TextButton.Create(panel, "Tab 1", e => {
-                    e.FindState<TestState>().ActiveTab = 1;
+                addButton.Rect = new Rect(150, 10, 100, 30);
+                var addButton2 = TextButton.Create(tab0, "Add 100", e => {
+                    e.FindState<TestState>().NumButtons += 100;
                 });
-                tabButton1.Disabled = state.ActiveTab == 1;
-                tabButton1.Rect = new Rect(101, 0, 100, 30);
-                
-                if (state.ActiveTab == 0) {
-                    var tab0 = Element.Create(panel, Tab1Key);
-                    tab0.Rect = new Rect(0, 30, 300, 550);
+                addButton2.Rect = new Rect(260, 10, 100, 30);
 
-                    var titleLabel = Label.Create(tab0, "This is tab 0");
-                    titleLabel.Pos = new Vec2(10, 10);
-                    var buttonCountLabel = Label.Create(tab0, "Button count: " + state.NumButtons);
-                    buttonCountLabel.Pos = new Vec2(10, 40);
+                var buttonScroller = ScrollArea.Create(tab0, ScrollAreaFlags.BounceY | ScrollAreaFlags.FillX);
+                var buttonContent = ScrollArea.GetContentPanel(buttonScroller);
+                Panel.AddProps(buttonScroller, new Color(200, 200, 200));
+                buttonScroller.Rect = new Rect(10, 70, 250, 400);
+                StackLayout.AddProps(buttonContent);
+                for (var i = 0; i < state.NumButtons; ++i) {
+                    var row = Element.Create(buttonContent);
+                    row.Height = 30;
 
-                    var addButton = TextButton.Create(tab0, "Add 1", e => {
-                        e.FindState<TestState>().NumButtons++;
+                    var button = TextButton.Create(row, "Ok", e => {
+                        var s = e.GetOrCreateState<TestCount>();
+                        s.StringValue = $"count: {++s.Value}";
                     });
-                    addButton.Rect = new Rect(150, 10, 100, 30);
-                    var addButton2 = TextButton.Create(tab0, "Add 100", e => {
-                        e.FindState<TestState>().NumButtons += 100;
-                    });
-                    addButton2.Rect = new Rect(260, 10, 100, 30);
+                    button.Size = new Vec2(100 + (float)Math.Sin(ui.Input.Time * 3 + i * 0.1f) * 30, 30);
 
-                    var buttonScroller = ScrollArea.Create(tab0, ScrollAreaFlags.BounceY | ScrollAreaFlags.FillX);
-                    var buttonContent = ScrollArea.GetContentPanel(buttonScroller);
-                    Panel.AddProps(buttonScroller, new Color(200, 200, 200));
-                    buttonScroller.Rect = new Rect(10, 70, 250, 400);
-                    StackLayout.AddProps(buttonContent);
-                    for (var i = 0; i < state.NumButtons; ++i) {
-                        var row = Element.Create(buttonContent);
-                        row.Height = 30;
-
-                        var button = TextButton.Create(row, "Ok", e => {
-                            var s = e.GetOrCreateState<TestCount>();
-                            s.StringValue = $"count: {++s.Value}";
-                        });
-                        button.Size = new Vec2(100 + (float)Math.Sin(ui.Input.Time * 3 + i * 0.1f) * 30, 30);
-
-                        var buttonCount = button.GetOrCreateState<TestCount>();
-                        var countString = buttonCount.StringValue;
-                        var countLabel = Label.Create(row, countString);
-                        countLabel.Rect = new Rect(170, 0, 100, 30);
-                        countLabel.SizeToFit = false;
-                    }
-                } else {
-                    var tab1 = Element.Create(panel, Tab2Key);
-                    tab1.Rect = new Rect(0, 30, 300, 550);
-
-                    var titleLabel = Label.Create(tab1, "This is tab 1");
-                    titleLabel.Pos = new Vec2(10, 10);
-                    
-                    
-                    var outerScrollArea = ScrollArea.Create(tab1);
-                    outerScrollArea.Rect = new Rect(10, 40, 300, 300);
-                    Panel.AddProps(outerScrollArea, new Color(182, 182, 182));
-
-                    var outerContentPanel = ScrollArea.GetContentPanel(outerScrollArea);
-                    outerContentPanel.Size = new Vec2(500, 500);
-                    Panel.AddProps(outerContentPanel, new Color(240, 240, 240));
-
-
-                    var scrollArea = ScrollArea.Create(outerContentPanel);
-                    scrollArea.Rect = new Rect(50, 50, 200, 200);
-                    Panel.AddProps(scrollArea, new Color(230, 230, 230));
-
-                    var contentPanel = ScrollArea.GetContentPanel(scrollArea);
-                    contentPanel.Size = new Vec2(250, 250);
-                    contentPanel.Rotation = Quat.FromAxisAngle(new Vec3(1, 1, 1).Normalized, (float)ui.Input.Time);
-                    contentPanel.ClipContent = false;
-                    Panel.AddProps(contentPanel, new Color(220, 220, 220));
-
-                    var dragLabel = Label.Create(contentPanel, "Drag me");
-                    dragLabel.Pos = new Vec2(10, 10);
-
-                    var button = TextButton.Create(contentPanel, "Hello", e => Debug.WriteLine("Hello"));
-                    button.Rect = new Rect(10, 50, 100, 30);
-                    //button.Pivot = new Vec3(0, 0, 10);
-                    button.Rotation = Quat.FromAxisAngle(new Vec3(1, 1, 1).Normalized, (float)ui.Input.Time);
-                    //button.Rotation = Quat.FromAxisAngle(new Vec3(0, 0, 1).Normalized, (float)Math.Sin(ui.Input.Time));
-                    //button.Rotation = Quat.FromAxisAngle(new Vec3(0, 1, 0).Normalized, 1f);
-
-                    button.OnDepthDescent(e => {
-                        var p0 = e.ToWorldCoord(Vec3.Zero);
-                        e.Context.Delegate.DrawDot(p0 + e.Normal * 10, Color.Yellow);
-                        e.Context.Delegate.DrawDot(p0 + e.Normal * 20, Color.Yellow);
-                        e.Context.Delegate.DrawDot(p0 + e.Normal * 30, Color.Yellow);
-                    });
-
-                    var toggleLabel = Label.Create(contentPanel, "Toggle me:");
-                    toggleLabel.Pos = new Vec2(10, 100);
-                    var toggle = ToggleSwitch.Create(contentPanel, switchValue, e => switchValue = !switchValue);
-                    toggle.Pos = new Vec2(100, 102);
-                    toggle.OnInserted(e => Debug.WriteLine("switch inserted"));
-                    toggle.OnRemoved(e => Debug.WriteLine("switch removed"));
+                    var buttonCount = button.GetOrCreateState<TestCount>();
+                    var countString = buttonCount.StringValue;
+                    var countLabel = Label.Create(row, countString);
+                    countLabel.Rect = new Rect(170, 0, 100, 30);
+                    countLabel.SizeToFit = false;
                 }
+            } else {
+                var tab1 = Element.Create(panel, Tab2Key);
+                tab1.Rect = new Rect(0, 30, 300, 550);
+
+                var titleLabel = Label.Create(tab1, "This is tab 1");
+                titleLabel.Pos = new Vec2(10, 10);
+                
+                
+                var outerScrollArea = ScrollArea.Create(tab1);
+                outerScrollArea.Rect = new Rect(10, 40, 300, 300);
+                Panel.AddProps(outerScrollArea, new Color(182, 182, 182));
+
+                var outerContentPanel = ScrollArea.GetContentPanel(outerScrollArea);
+                outerContentPanel.Size = new Vec2(500, 500);
+                Panel.AddProps(outerContentPanel, new Color(240, 240, 240));
+
+
+                var scrollArea = ScrollArea.Create(outerContentPanel);
+                scrollArea.Rect = new Rect(50, 50, 200, 200);
+                Panel.AddProps(scrollArea, new Color(230, 230, 230));
+
+                var contentPanel = ScrollArea.GetContentPanel(scrollArea);
+                contentPanel.Size = new Vec2(250, 250);
+                contentPanel.Rotation = Quat.FromAxisAngle(new Vec3(1, 1, 1).Normalized, (float)ui.Input.Time);
+                contentPanel.ClipContent = false;
+                Panel.AddProps(contentPanel, new Color(220, 220, 220));
+
+                var dragLabel = Label.Create(contentPanel, "Drag me");
+                dragLabel.Pos = new Vec2(10, 10);
+
+                var button = TextButton.Create(contentPanel, "Hello", e => Debug.WriteLine("Hello"));
+                button.Rect = new Rect(10, 50, 100, 30);
+                //button.Pivot = new Vec3(0, 0, 10);
+                button.Rotation = Quat.FromAxisAngle(new Vec3(1, 1, 1).Normalized, (float)ui.Input.Time);
+                //button.Rotation = Quat.FromAxisAngle(new Vec3(0, 0, 1).Normalized, (float)Math.Sin(ui.Input.Time));
+                //button.Rotation = Quat.FromAxisAngle(new Vec3(0, 1, 0).Normalized, 1f);
+
+                button.OnDepthDescent(e => {
+                    var p0 = e.ToWorldCoord(Vec3.Zero);
+                    e.Context.Delegate.DrawDot(p0 + e.Normal * 10, Color.Yellow);
+                    e.Context.Delegate.DrawDot(p0 + e.Normal * 20, Color.Yellow);
+                    e.Context.Delegate.DrawDot(p0 + e.Normal * 30, Color.Yellow);
+                });
+
+                var toggleLabel = Label.Create(contentPanel, "Toggle me:");
+                toggleLabel.Pos = new Vec2(10, 100);
+                var toggle = ToggleSwitch.Create(contentPanel, switchValue, onToggleSwitch);
+                toggle.Pos = new Vec2(100, 102);
+                toggle.OnInserted(e => Debug.WriteLine("switch inserted"));
+                toggle.OnRemoved(e => Debug.WriteLine("switch removed"));
             }
-
-            var virtualList = VirtualList.Create(root, 50, 40.0f, (parent, index) => {
-                var label = Label.Create(parent, "Row", alignment: (TextAlignment)(index % 3));
-                return label;
-            }, ListKey);
-            virtualList.Rect = new Rect(550, 80, 100, 600);
-            Panel.AddProps(ScrollArea.GetContentPanel(virtualList), new Color(240, 240, 240));
-
-            ui.EndFrame();
         }
+
+        var virtualList = VirtualList.Create(root, 50, 40.0f, (parent, index) => {
+            var label = Label.Create(parent, "Row", alignment: (TextAlignment)(index % 3));
+            return label;
+        }, ListKey);
+        virtualList.Rect = new Rect(550, 80, 100, 600);
+        Panel.AddProps(ScrollArea.GetContentPanel(virtualList), new Color(240, 240, 240));
+
+        ui.EndFrame();
     }
 }
