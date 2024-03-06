@@ -133,7 +133,9 @@ public readonly struct Element : IComparable<Element>, IEquatable<Element> {
 
 
     #region Misc forwarded properties
-    public ref string Name =>  ref Context.AttrName[Index];
+    public long Id => Context.AttrStateId[Index];
+    public bool HasFocus => Context.FocusId == Id;
+    public ref string Name => ref Context.AttrName[Index];
     public bool ClipContent {
         get => Context.GetFlag(Index, ElementFlags.ClipContent);
         set => Context.SetFlag(Index, ElementFlags.ClipContent, value);

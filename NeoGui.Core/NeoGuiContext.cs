@@ -26,6 +26,7 @@ public class NeoGuiContext {
     internal string[] AttrName = new string[InitialArraySize];
     internal int[] AttrParent = new int[InitialArraySize];
     internal int[] AttrFirstChild = new int[InitialArraySize];
+    internal int[] AttrLastChild = new int[InitialArraySize];
     internal int[] AttrNextSibling = new int[InitialArraySize];
     internal int[] AttrLevel = new int[InitialArraySize];
     internal int[] AttrZIndex = new int[InitialArraySize];
@@ -46,6 +47,7 @@ public class NeoGuiContext {
 
     public readonly INeoGuiDelegate Delegate;
     public readonly InputContext Input;
+    public long FocusId;
     
     public NeoGuiContext(INeoGuiDelegate del) {
         rootStateDomain = new StateDomain(this);
@@ -104,6 +106,7 @@ public class NeoGuiContext {
             Array.Resize(ref AttrName, newLength);
             Array.Resize(ref AttrParent, newLength);
             Array.Resize(ref AttrFirstChild, newLength);
+            Array.Resize(ref AttrLastChild, newLength);
             Array.Resize(ref AttrNextSibling, newLength);
             Array.Resize(ref AttrLevel, newLength);
             Array.Resize(ref AttrZIndex, newLength);
@@ -128,26 +131,32 @@ public class NeoGuiContext {
         }
         currStateIds[id] = domain;
 
-        AttrStateId[ElementCount] = id;
-        AttrStateKey[ElementCount] = key;
-        AttrStateDomain[ElementCount] = domain;
-        AttrName[ElementCount] = string.Empty;
-        AttrParent[ElementCount] = parent.Index;
-        AttrFirstChild[ElementCount] = -1; // we have no children yet
-        AttrNextSibling[ElementCount] = AttrFirstChild[parent.Index]; // set parent's first child as next sibling
-        AttrFirstChild[parent.Index] = ElementCount; // set this element as parent's first child
-        AttrLevel[ElementCount] = AttrLevel[parent.Index] + 1;
-        AttrZIndex[ElementCount] = 0;
-        AttrFlags[ElementCount] = 0;
-        AttrTransform[ElementCount].MakeIdentity();
-        AttrWorldTransform[ElementCount].MakeIdentity();
-        AttrRect[ElementCount] = new Rect();
-        AttrBoundingRect[ElementCount] = new Rect();
-        AttrDrawFunc[ElementCount] = null;
-        AttrMeasureFunc[ElementCount] = null;
-        AttrLayoutFunc[ElementCount] = null;
-
-        return new Element(this, ElementCount++);
+        int index = ElementCount++;
+        AttrStateId[index] = id;
+        AttrStateKey[index] = key;
+        AttrStateDomain[index] = domain;
+        AttrName[index] = string.Empty;
+        AttrParent[index] = parent.Index;
+        AttrFirstChild[index] = -1;
+        AttrLastChild[index] = -1;
+        AttrNextSibling[index] = -1;
+        if (AttrFirstChild[parent.Index] == -1) {
+            AttrFirstChild[parent.Index] = index;
+        } else {
+            AttrNextSibling[AttrLastChild[parent.Index]] = index;
+        }
+        AttrLastChild[parent.Index] = index;
+        AttrLevel[index] = AttrLevel[parent.Index] + 1;
+        AttrZIndex[index] = 0;
+        AttrFlags[index] = 0;
+        AttrTransform[index].MakeIdentity();
+        AttrWorldTransform[index].MakeIdentity();
+        AttrRect[index] = new Rect();
+        AttrBoundingRect[index] = new Rect();
+        AttrDrawFunc[index] = null;
+        AttrMeasureFunc[index] = null;
+        AttrLayoutFunc[index] = null;
+        return new Element(this, index);
     }
     
 
@@ -385,7 +394,7 @@ public class NeoGuiContext {
         foreach (var entry in prevRemoveHandlers) {
             if (!currStateIds.ContainsKey(entry.Key)) {
                 var domain = prevStateIds[entry.Key];
-                entry.Value(new ElementStateProxy(entry.Key, domain.Storage));
+                entry.Value(new ElementStateProxy(this, entry.Key, domain.Storage));
             }
         }
         prevRemoveHandlers.Clear();
@@ -403,7 +412,8 @@ public class NeoGuiContext {
         public readonly Action<Element> Handler = handler;
 
         public int CompareTo(TraverseEntry<TKey> other) {
-            return key.CompareTo(other.key);
+            int keyResult = key.CompareTo(other.key);
+            return keyResult != 0 ? keyResult : ElemIndex.CompareTo(other.ElemIndex);
         }
     }
     private readonly List<TraverseEntry<long>> depthDescentHandlers = [];
@@ -478,13 +488,13 @@ public class NeoGuiContext {
         RunPostPassHandlers();
     }
 
-    private readonly List<KeyedValue<int, Action<Element>>> postPassHandlers = [];
+    private readonly List<(int, Action<Element>)> postPassHandlers = [];
     internal void RunAfterPass(int elemIndex, Action<Element> handler) {
-        postPassHandlers.Add(new KeyedValue<int, Action<Element>>(elemIndex, handler));
+        postPassHandlers.Add((elemIndex, handler));
     }
     private void RunPostPassHandlers() {
-        foreach (var entry in postPassHandlers) {
-            entry.Value(new Element(this, entry.Key));
+        foreach (var (elemIndex, handler) in postPassHandlers) {
+            handler(new Element(this, elemIndex));
         }
     }
     #endregion

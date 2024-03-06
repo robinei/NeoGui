@@ -7,19 +7,22 @@
 /// </summary>
 public readonly struct ElementStateProxy
 {
-    private readonly long stateId;
     private readonly ValueStorage<StateDomain.StateKeys, long> stateStorage;
 
-    internal ElementStateProxy(long stateId, ValueStorage<StateDomain.StateKeys, long> stateStorage)
+    internal ElementStateProxy(NeoGuiContext context, long stateId, ValueStorage<StateDomain.StateKeys, long> stateStorage)
     {
-        this.stateId = stateId;
+        Context = context;
+        Id = stateId;
         this.stateStorage = stateStorage;
     }
 
-    public bool HasState<TState>() => stateStorage.HasValue<TState>(stateId);
-    public bool TryGetState<TState>(out TState? value) => stateStorage.TryGetValue(stateId, out value);
-    public TState GetState<TState>() => stateStorage.GetValue<TState>(stateId);
-    public TState GetState<TState>(TState defaultValue) => stateStorage.GetValue(stateId, defaultValue);
-    public TState GetOrCreateState<TState>() where TState: new() => stateStorage.GetOrCreateValue<TState>(stateId);
-    public void SetState<TState>(TState value) => stateStorage.SetValue(stateId, value);
+    public readonly NeoGuiContext Context;
+    public readonly long Id;
+    public bool HasFocus => Context.FocusId == Id;
+    public bool HasState<TState>() => stateStorage.HasValue<TState>(Id);
+    public bool TryGetState<TState>(out TState? value) => stateStorage.TryGetValue(Id, out value);
+    public TState GetState<TState>() => stateStorage.GetValue<TState>(Id);
+    public TState GetState<TState>(TState defaultValue) => stateStorage.GetValue(Id, defaultValue);
+    public TState GetOrCreateState<TState>() where TState: new() => stateStorage.GetOrCreateValue<TState>(Id);
+    public void SetState<TState>(TState value) => stateStorage.SetValue(Id, value);
 }

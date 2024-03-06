@@ -11,6 +11,7 @@ public class ToggleSwitchState {
 public static class ToggleSwitch {
     public static Element Create(Element parent, bool on = false, Action<Element>? onToggled = null) {
         var toggleSwitch = Element.Create(parent);
+        toggleSwitch.Name = "ToggleSwitch";
         ButtonBehavior.Add(toggleSwitch);
         toggleSwitch.Size = new Vec2(36, 16);
         toggleSwitch.Draw = Draw;
@@ -47,7 +48,7 @@ public static class ToggleSwitch {
         var toggleSwitch = dc.Target;
         var state = toggleSwitch.GetOrCreateState<ToggleSwitchState>();
         var size = toggleSwitch.Size;
-        dc.SolidRect(new Rect(size), Color.Gray);
-        dc.SolidRect(new Rect(state.Pos * (size.X - size.Y), 0, size.Y, size.Y), Color.DarkGray);
+        dc.SolidRect(new Rect(size), Color.LightGray);
+        TextButton.DrawButtonRect(dc, toggleSwitch, new Rect(state.Pos * (size.X - size.Y), 0, size.Y, size.Y));
     }
 }

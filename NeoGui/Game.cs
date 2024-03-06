@@ -166,6 +166,10 @@ public class Game : Microsoft.Xna.Framework.Game, INeoGuiDelegate {
         input.MouseButtonDown[(int)MouseButton.Left] = mouseState.LeftButton == ButtonState.Pressed;
         input.MouseButtonDown[(int)MouseButton.Right] = mouseState.RightButton == ButtonState.Pressed;
         input.MouseButtonDown[(int)MouseButton.Middle] = mouseState.MiddleButton == ButtonState.Pressed;
+        KeyboardState keybouardState = Keyboard.GetState();
+        for (int i = 0; i < 256; ++i) {
+            input.KeyDown[i] = keybouardState[(Keys)i] == KeyState.Down ? (byte)1 : (byte)0; // TODO: don't assume the MonoGame numeric codes are stable
+        }
         ui.Input.SetNewState(input);
     }
 
@@ -186,10 +190,8 @@ public class Game : Microsoft.Xna.Framework.Game, INeoGuiDelegate {
                     break;
                 case DrawCommandType.SetTransform:
                     spriteBatch.End();
-                    Mat4 mat4;
-                    command.SetTransform.Transform.ToMatrix(out mat4);
-                    Matrix matrix;
-                    FromNeoGuiToMonoGameMatrix(out matrix, ref mat4);
+                    command.SetTransform.Transform.ToMatrix(out Mat4 mat4);
+                    FromNeoGuiToMonoGameMatrix(out Matrix matrix, ref mat4);
                     basicEffect.World = matrix * Matrix.CreateScale(1, 1, 0);
                     spriteBatch.Begin(SpriteSortMode.Immediate, null, SamplerState.AnisotropicClamp, depthStencilState, rasterizerState, basicEffect);
                     break;
@@ -229,10 +231,8 @@ public class Game : Microsoft.Xna.Framework.Game, INeoGuiDelegate {
             var trans = new Transform();
             trans.MakeIdentity();
             trans.Translation = dot.Pos;
-            Mat4 mat4;
-            trans.ToMatrix(out mat4);
-            Matrix matrix;
-            FromNeoGuiToMonoGameMatrix(out matrix, ref mat4);
+            trans.ToMatrix(out Mat4 mat4);
+            FromNeoGuiToMonoGameMatrix(out Matrix matrix, ref mat4);
             basicEffect.World = matrix;
             spriteBatch.Begin(SpriteSortMode.Immediate, null, SamplerState.AnisotropicClamp, depthStencilState, rasterizerState, basicEffect);
             spriteBatch.Draw(pixel, new Rectangle(-2, -2, 4, 4), dot.Color.ToMonoGameColor());

@@ -58,5 +58,5 @@ public struct Rect {
 
     public override readonly string ToString() => $"Rect({X}, {Y}, {Width}, {Height})";
 
-    public static readonly Rect Empty = new(0, 0, 0, 0);
+    public static Rect Empty => new(0, 0, 0, 0);
 }

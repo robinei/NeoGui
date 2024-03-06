@@ -1,10 +1,13 @@
 ﻿namespace NeoGui.Toolkit;
 
 using System;
+using System.Diagnostics;
 using NeoGui.Core;
 
 public class ButtonState {
     public bool MousePressed;
+    public bool EnterPressed;
+    public bool SpacePressed;
 }
 
 public struct ButtonCallback {
@@ -14,8 +17,10 @@ public struct ButtonCallback {
 public static class ButtonBehavior {
     private static readonly ButtonCallback DefaultCallback = new() { OnClick = e => { } };
 
-    public static void Add(Element elem) {
-        elem.OnDepthDescent(OnDepthDescent);
+    public static void Add(Element e) {
+        e.OnDepthDescent(OnDepthDescent);
+        e.OnTreeDescent(OnTreeDescent);
+        e.OnRemoved(OnRemoved);
     }
 
     private static void OnDepthDescent(Element e) {
@@ -34,9 +39,60 @@ public static class ButtonBehavior {
             }
         } else {
             if (input.WasMouseButtonPressed(MouseButton.Left) && e.IsUnderMouse) {
-                state.MousePressed = true;
                 input.ConsumeMouseButtonPressed(MouseButton.Left);
+                state.MousePressed = true;
             }
+        }
+    }
+
+    private static void OnTreeDescent(Element e) {
+        var input = e.Context.Input;
+        if (e.Context.FocusId == 0) {
+            if (!e.Disabled) {
+                e.Context.FocusId = e.Id;
+                Debug.WriteLine($"Grab focus: {e.Id} '{GetLabel(e)}'");
+            }
+        } else if (e.HasFocus) {
+            var state = e.GetOrCreateState<ButtonState>();
+            if (e.Disabled) {
+                e.Context.FocusId = 0;
+                state.EnterPressed = false;
+                state.SpacePressed = false;
+                Debug.WriteLine($"Release focus (disabled): {e.Id} '{GetLabel(e)}'");
+            } else if (input.WasKeyPressed(KeyboardKey.Tab)) {
+                input.ConsumeKeyPressed(KeyboardKey.Tab);
+                e.Context.FocusId = 0;
+                Debug.WriteLine($"Release focus (tab): {e.Id} '{GetLabel(e)}'");
+            } else if (input.WasKeyPressed(KeyboardKey.Enter)) {
+                input.ConsumeKeyPressed(KeyboardKey.Enter);
+                state.EnterPressed = true;
+            } else if (input.WasKeyPressed(KeyboardKey.Space)) {
+                input.ConsumeKeyPressed(KeyboardKey.Space);
+                state.SpacePressed = true;
+            } else if (state.EnterPressed && input.WasKeyReleased(KeyboardKey.Enter)) {
+                state.EnterPressed = false;
+                state.SpacePressed = false;
+                e.Get(DefaultCallback).OnClick(e);
+            } else if (state.SpacePressed && input.WasKeyReleased(KeyboardKey.Space)) {
+                state.EnterPressed = false;
+                state.SpacePressed = false;
+                e.Get(DefaultCallback).OnClick(e);
+            }
+        }
+    }
+
+    private static string GetLabel(Element e) {
+        string label = Label.GetText(e);
+        if (string.IsNullOrEmpty(label)) {
+            label = e.Name;
+        }
+        return label;
+    }
+
+    private static void OnRemoved(ElementStateProxy e) {
+        if (e.HasFocus) {
+            e.Context.FocusId = 0;
+            Debug.WriteLine($"Release focus (removed): {e.Id}");
         }
     }
 }
@@ -45,28 +101,42 @@ public static class ButtonBehavior {
 public static class TextButton {
     private static readonly ButtonState DefaultState = new();
 
-    public static Element Create(Element parent, string text, Action<Element>? onClick = null) {
+    public static Element Create(Element parent, string text, Action<Element> onClick) {
         var button = Label.Create(parent, text, Color.White, TextAlignment.Center);
         ButtonBehavior.Add(button);
         button.SizeToFit = false;
         button.Draw = Draw;
-        if (onClick != null) {
-            button.Set(new ButtonCallback { OnClick = onClick });
-        }
+        button.Set(new ButtonCallback { OnClick = onClick });
         return button;
     }
 
     public static void Draw(DrawContext dc) {
         var button = dc.Target;
         var size = button.Size;
-        var color = Color.Gray;
-        if (!button.Disabled && button.IsUnderMouse) {
-            color = button.GetState(DefaultState).MousePressed ? Color.Black : Color.DarkGray;
-        }
-        dc.SolidRect(new Rect(size), color);
+        DrawButtonRect(dc, button, new Rect(size));
         Label.Draw(dc);
         if (button.Disabled) {
             dc.SolidRect(new Rect(size), new Color(0, 0, 0, 64));
         }
+    }
+
+    public static void DrawButtonRect(DrawContext dc, Element button, Rect rect) {
+        var color = Color.Gray;
+        if (!button.Disabled) {
+            var state = button.GetState(DefaultState);
+            bool focused = button.HasFocus;
+            bool hovered = button.IsUnderMouse;
+            bool down = focused && (state.EnterPressed || state.SpacePressed) || hovered && state.MousePressed;
+            if (down) {
+                color = Color.Black;
+            } else if (hovered && focused) {
+                color = Color.DarkBlue;
+            } else if (hovered) {
+                color = Color.DarkGray;
+            } else if (focused) {
+                color = Color.Blue;
+            }
+        }
+        dc.SolidRect(rect, color);
     }
 }

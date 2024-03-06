@@ -5,7 +5,7 @@ using NeoGui.Core;
 public struct PanelBackground { public Color Color; }
 
 public static class Panel {
-    private static readonly PanelBackground DefaultPanelBackground = new PanelBackground {Color = Color.White};
+    private static readonly PanelBackground DefaultPanelBackground = new() { Color = Color.White};
 
     public static Element Create(Element parent, Color? backgroundColor = null, object? key = null, StateDomain? domain = null) {
         var panel = Element.Create(parent, key, domain);

@@ -244,7 +244,7 @@ public static class ScrollArea {
         }
     }
 
-    private static readonly ScrollAreaFlags[] AxisBounceFlags = {ScrollAreaFlags.BounceX, ScrollAreaFlags.BounceY};
+    private static readonly ScrollAreaFlags[] AxisBounceFlags = [ScrollAreaFlags.BounceX, ScrollAreaFlags.BounceY];
 
     private static float ClampToBounds(float pos, float contentSize, float clientSize) {
         if (pos > 0) {

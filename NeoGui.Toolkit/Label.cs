@@ -16,6 +16,10 @@ public static class Label {
     private static readonly LabelColor DefaultColor = new() { Value = Color.Black };
     private const TextAlignment DefaultAlignment = TextAlignment.Left;
 
+    public static string GetText(Element label) => label.Get(DefaultText).Value;
+    public static Color GetColor(Element label) => label.Get(DefaultColor).Value;
+    public static TextAlignment GetAlignment(Element label) => label.Get(DefaultAlignment);
+
     public static Element Create(Element parent, string text, Color? color = null, TextAlignment? alignment = null) {
         var label = Element.Create(parent);
         if (text != null) {
@@ -44,12 +48,12 @@ public static class Label {
 
     public static void Draw(DrawContext dc) {
         var label = dc.Target;
-        var text = label.Get(DefaultText).Value;
+        var text = GetText(label);
         if (string.IsNullOrEmpty(text)) {
             return;
         }
-        var color = label.Get(DefaultColor).Value;
-        var alignment = label.Get(DefaultAlignment);
+        var color = GetColor(label);
+        var alignment = GetAlignment(label);
         var size = label.Size;
         var textSize = dc.TextSize(text);
         var y = (size.Y - textSize.Y) * 0.5f;
