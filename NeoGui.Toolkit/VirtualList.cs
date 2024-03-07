@@ -4,19 +4,19 @@ using System;
 using NeoGui.Core;
 
 public static class VirtualList {
-    public static Element Create(
-        Element parent,
+    public static Element CreateVirtualList(
+        this Element parent,
         int itemCount,
         float itemHeight,
         Func<Element, int, Element> createItem,
         object? key = null,
         StateDomain? domain = null)
     {
-        var virtualList = ScrollArea.Create(parent, ScrollAreaFlags.BounceY | ScrollAreaFlags.FillX, key: key, domain: domain);
+        var virtualList = parent.CreateScrollArea(ScrollAreaFlags.BounceY | ScrollAreaFlags.FillX, key: key, domain: domain);
         virtualList.Layout = Layout;
         
         var state = virtualList.GetOrCreateState<ScrollAreaState>();
-        var content = ScrollArea.GetContentPanel(virtualList);
+        var content = virtualList.GetScrollAreaContentPanel();
         content.Size = new Vec2(0, itemCount * itemHeight);
         
         var index = Math.Max(0, (int)(-state.Pos.Y / itemHeight));
@@ -35,7 +35,7 @@ public static class VirtualList {
     }
 
     public static void Layout(Element virtualList) {
-        var content = ScrollArea.GetContentPanel(virtualList);
+        var content = virtualList.GetScrollAreaContentPanel();
         var width = virtualList.Width;
         foreach (var item in content.Children) {
             item.Width = width;

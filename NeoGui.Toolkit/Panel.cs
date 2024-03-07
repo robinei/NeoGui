@@ -7,17 +7,16 @@ public struct PanelBackground { public Color Color; }
 public static class Panel {
     private static readonly PanelBackground DefaultPanelBackground = new() { Color = Color.White};
 
-    public static Element Create(Element parent, Color? backgroundColor = null, object? key = null, StateDomain? domain = null) {
-        var panel = Element.Create(parent, key, domain);
-        AddProps(panel, backgroundColor);
-        return panel;
+    public static Element CreatePanel(this Element parent, Color? backgroundColor = null, object? key = null, StateDomain? domain = null) {
+        return parent.CreateElement(key, domain).AddPanelProps(backgroundColor);
     }
 
-    public static void AddProps(Element elem, Color? backgroundColor = null) {
+    public static Element AddPanelProps(this Element elem, Color? backgroundColor = null) {
         if (backgroundColor != null) {
             elem.Set(new PanelBackground { Color = backgroundColor.Value });
         }
         elem.Draw = Draw;
+        return elem;
     }
 
     public static void Draw(DrawContext dc) {

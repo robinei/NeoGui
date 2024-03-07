@@ -17,73 +17,90 @@ public readonly struct Element : IComparable<Element>, IEquatable<Element> {
         Index = index;
     }
 
-    public static Element Create(Element parent, object? key = null, StateDomain? domain = null) =>
-        parent.Context.CreateElement(parent, key, domain);
-    
-    public Element? Parent => Index != 0 ? new(Context, Context.AttrParent[Index]) : null;
-    public Element? FirstChild { get {
-        int firstChild = Context.AttrFirstChild[Index];
-        return firstChild > 0 ? new(Context, firstChild) : null;
-    } }
-    public Element? NextSibling { get {
-        int nextSibling = Context.AttrNextSibling[Index];
-        return nextSibling > 0 ? new(Context, nextSibling) : null;
-    } }
+    public Element CreateElement(object? key = null, StateDomain? domain = null) => Context.CreateElement(this, key, domain);
 
-    public void OnDepthDescent(Action<Element> handler) => Context.AddDepthDescentHandler(Index, handler);
-    public void OnDepthAscent(Action<Element> handler) => Context.AddDepthAscentHandler(Index, handler);
-    public void OnTreeDescent(Action<Element> handler) => Context.AddTreeDescentHandler(Index, handler);
-    public void OnTreeAscent(Action<Element> handler) => Context.AddTreeAscentHandler(Index, handler);
+    public Element Capture(out Element elem) { elem = this; return this; }
+    
+
+    #region Traversal and life cycle handlers
+    public Element OnDepthDescent(Action<Element> handler) { Context.AddDepthDescentHandler(Index, handler); return this; }
+    public Element OnDepthAscent(Action<Element> handler) { Context.AddDepthAscentHandler(Index, handler); return this; }
+    public Element OnTreeDescent(Action<Element> handler) { Context.AddTreeDescentHandler(Index, handler); return this; }
+    public Element OnTreeAscent(Action<Element> handler) { Context.AddTreeAscentHandler(Index, handler); return this; }
     
     /// <summary>
     /// Invoke in one of the above *Descent/*Ascent pass handlers to have this handler be called after the current pass has finished.
     /// </summary>
-    public void OnPassFinished(Action<Element> handler) => Context.RunAfterPass(Index, handler);
+    public Element OnPassFinished(Action<Element> handler) { Context.RunAfterPass(Index, handler); return this; }
 
     /// <summary>
     /// Run when an element is inserted into the tree, after having not been in it for at least one frame.
     /// </summary>
-    public void OnInserted(Action<Element> handler) => Context.AddInsertHandler(Index, handler);
+    public Element OnInserted(Action<Element> handler) { Context.AddInsertHandler(Index, handler); return this; }
 
     /// <summary>
     /// Run when an element is removed from the tree, after having been in it for at least one frame.
     /// Use this to clean up state, if necessary.
     /// </summary>
-    public void OnRemoved(Action<ElementStateProxy> handler) => Context.AddRemoveHandler(Context.AttrStateId[Index], handler);
+    public Element OnRemoved(Action<ElementStateProxy> handler) { Context.AddRemoveHandler(Context.AttrStateId[Index], handler); return this; }
+    #endregion
 
 
+    #region Component access
     public bool Has<TComponent>() => Context.DataStorage.HasValue<TComponent>(Index);
     public bool TryGet<TComponent>(out TComponent? value) => Context.DataStorage.TryGetValue(Index, out value);
     public TComponent Get<TComponent>() => Context.DataStorage.GetValue<TComponent>(Index);
     public TComponent Get<TComponent>(TComponent defaultValue) => Context.DataStorage.GetValue(Index, defaultValue);
     public TComponent GetOrCreate<TComponent>() where TComponent: new() => Context.DataStorage.GetOrCreateValue<TComponent>(Index);
-    public void Set<TComponent>(TComponent value) => Context.DataStorage.SetValue(Index, value);
+    public Element GetOrCreate<TComponent>(out TComponent value) where TComponent: new() {
+        value = Context.DataStorage.GetOrCreateValue<TComponent>(Index);
+        return this;
+    }
+    public Element Set<TComponent>(TComponent value) {
+        Context.DataStorage.SetValue(Index, value);
+        return this;
+    }
+    #endregion
     
 
+    #region State access
     public bool HasState<TState>() => Context.AttrStateDomain[Index].Storage.HasValue<TState>(Context.AttrStateId[Index]);
     public bool TryGetState<TState>(out TState? value) => Context.AttrStateDomain[Index].Storage.TryGetValue(Context.AttrStateId[Index], out value);
     public TState GetState<TState>() => Context.AttrStateDomain[Index].Storage.GetValue<TState>(Context.AttrStateId[Index]);
     public TState GetState<TState>(TState defaultValue) => Context.AttrStateDomain[Index].Storage.GetValue(Context.AttrStateId[Index], defaultValue);
     public TState GetOrCreateState<TState>() where TState: new() => Context.AttrStateDomain[Index].Storage.GetOrCreateValue<TState>(Context.AttrStateId[Index]);
-    public void SetState<TState>(TState value) => Context.AttrStateDomain[Index].Storage.SetValue(Context.AttrStateId[Index], value);
+    public Element GetOrCreateState<TState>(out TState value) where TState: new() {
+        value = Context.AttrStateDomain[Index].Storage.GetOrCreateValue<TState>(Context.AttrStateId[Index]);
+        return this;
+    }
+    public Element SetState<TState>(TState value) {
+        Context.AttrStateDomain[Index].Storage.SetValue(Context.AttrStateId[Index], value);
+        return this;
+    }
     public TState FindState<TState>() {
-        for (Element? elem = this; elem != null; elem = elem.Value.Parent) {
-            if (elem.Value.TryGetState<TState>(out var state)) {
+        for (Element elem = this; ; elem = elem.Parent) {
+            if (elem.TryGetState<TState>(out var state)) {
                 return state!;
             }
+            if (!elem.HasParent) {
+                throw new Exception("state not found");
+            }
         }
-        throw new Exception("state not found");
     }
     public TState FindState<TState>(TState defaultValue) {
-        for (Element? elem = this; elem != null; elem = elem.Value.Parent) {
-            if (elem.Value.TryGetState<TState>(out var state)) {
+        for (Element elem = this; ; elem = elem.Parent) {
+            if (elem.TryGetState<TState>(out var state)) {
                 return state!;
             }
+            if (!elem.HasParent) {
+                return defaultValue;
+            }
         }
-        return defaultValue;
     }
+    #endregion
     
 
+    #region Coordinate systems and hit detection
     public bool IsUnderMouse => HitTest(Context.Input.MousePos);
 
     public bool HitTest(Vec2 p) {
@@ -130,6 +147,7 @@ public readonly struct Element : IComparable<Element>, IEquatable<Element> {
     public Vec3 ToWorldCoord(Vec3 localPos) => Context.AttrWorldTransform[Index].ApplyForward(localPos);
     public Vec2 ToLocalCoord(Vec2 worldPos) => ToLocalCoord(new Vec3(worldPos)).XY;
     public Vec2 ToWorldCoord(Vec2 localPos) => ToWorldCoord(new Vec3(localPos)).XY;
+    #endregion
 
 
     #region Misc forwarded properties
@@ -170,7 +188,40 @@ public readonly struct Element : IComparable<Element>, IEquatable<Element> {
     public ref Action<DrawContext>? Draw => ref Context.AttrDrawFunc[Index];
     public ref Action<Element>? Measure => ref Context.AttrMeasureFunc[Index];
     public ref Action<Element>? Layout => ref Context.AttrLayoutFunc[Index];
-    #endregion 
+    #endregion
+
+
+    #region Setters
+    public Element SetName(string value) { Context.AttrName[Index] = value; return this; }
+    public Element SetFlag(ElementFlags flag, bool value) { Context.SetFlag(Index, flag, value); return this; }
+    public Element SetClipContent(bool value) { Context.SetFlag(Index, ElementFlags.ClipContent, value); return this; }
+    public Element SetDisabled(bool value) { Context.SetFlag(Index, ElementFlags.Disabled, value); return this; }
+    public Element SetOpaque(bool value) { Context.SetFlag(Index, ElementFlags.Opaque, value); return this; }
+    public Element SetSizeToFit(bool value) { Context.SetFlag(Index, ElementFlags.SizeToFit, value); return this; }
+    public Element SetZIndex(int value) { Context.AttrZIndex[Index] = value; return this; }
+    public Element SetTransform(Transform value) { Context.AttrTransform[Index] = value; return this; }
+    public Element SetPivot(Vec3 value) { Context.AttrTransform[Index].Pivot = value; return this; }
+    public Element SetPivot(float x, float y, float z) { Context.AttrTransform[Index].Pivot = new Vec3(x, y, z); return this; }
+    public Element SetRotation(Quat value) { Context.AttrTransform[Index].Rotation = value; return this; }
+    public Element SetTranslation(Vec3 value) { Context.AttrTransform[Index].Translation = value; return this; }
+    public Element SetTranslation(float x, float y, float z) { Context.AttrTransform[Index].Translation = new Vec3(x, y, z); return this; }
+    public Element SetScale(Vec3 value) { Context.AttrTransform[Index].Scale = value; return this; }
+    public Element SetScale(float x, float y, float z) { Context.AttrTransform[Index].Scale = new Vec3(x, y, z); return this; }
+    public Element SetX(float x) { Context.AttrRect[Index].Pos.X = x; return this; }
+    public Element SetY(float y) { Context.AttrRect[Index].Pos.Y = y; return this; }
+    public Element SetWidth(float w) { Context.AttrRect[Index].Size.X = w; return this; }
+    public Element SetHeight(float h) { Context.AttrRect[Index].Size.Y = h; return this; }
+    public Element SetPos(Vec2 value) { Context.AttrRect[Index].Pos = value; return this; }
+    public Element SetPos(float x, float y) { Context.AttrRect[Index].Pos = new Vec2(x, y); return this; }
+    public Element SetSize(Vec2 value) { Context.AttrRect[Index].Size = value; return this; }
+    public Element SetSize(float w, float h) { Context.AttrRect[Index].Size = new Vec2(w, h); return this; }
+    public Element SetRect(Rect value) { Context.AttrRect[Index] = value; return this; }
+    public Element SetRect(float x, float y, float w, float h) { Context.AttrRect[Index] = new Rect(x, y, w, h); return this; }
+    public Element OnDraw(Action<DrawContext> value) { Context.AttrDrawFunc[Index] = value; return this; }
+    public Element OnMeasure(Action<Element> value) { Context.AttrMeasureFunc[Index] = value; return this; }
+    public Element OnLayout(Action<Element> value) { Context.AttrLayoutFunc[Index] = value; return this; }
+    #endregion
+
 
     #region Comparison and equality
     public int CompareTo(Element other) {
@@ -186,6 +237,18 @@ public readonly struct Element : IComparable<Element>, IEquatable<Element> {
     #endregion
 
 
+    #region Tree traversal and child enumeration
+    public bool HasParent => Index != 0;
+    public Element Parent => new(Context, Context.AttrParent[Index]);
+    public Element? FirstChild { get {
+        int firstChild = Context.AttrFirstChild[Index];
+        return firstChild > 0 ? new(Context, firstChild) : null;
+    } }
+    public Element? NextSibling { get {
+        int nextSibling = Context.AttrNextSibling[Index];
+        return nextSibling > 0 ? new(Context, nextSibling) : null;
+    } }
+
     public Element? FindChild(Func<Element, bool> predicate) {
         for (Element? child = FirstChild; child != null; child = child.Value.NextSibling) {
             if (predicate(child.Value)) {
@@ -195,8 +258,6 @@ public readonly struct Element : IComparable<Element>, IEquatable<Element> {
         return null;
     }
 
-
-    #region Child enumeration
     public IEnumerable<Element> Children => new ChildEnumerable(Context, Index);
 
     private readonly struct ChildEnumerable(NeoGuiContext context, int parentIndex) : IEnumerable<Element> {
@@ -224,5 +285,5 @@ public readonly struct Element : IComparable<Element>, IEquatable<Element> {
         readonly object IEnumerator.Current => Current;
         public readonly void Dispose() { }
     }
+    #endregion
 }
-#endregion

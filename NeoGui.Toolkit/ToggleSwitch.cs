@@ -9,10 +9,10 @@ public class ToggleSwitchState {
 }
 
 public static class ToggleSwitch {
-    public static Element Create(Element parent, bool on = false, Action<Element>? onToggled = null) {
-        var toggleSwitch = Element.Create(parent);
+    public static Element CreateToggleSwitch(this Element parent, bool on = false, Action<Element>? onToggled = null) {
+        var toggleSwitch = parent.CreateElement();
         toggleSwitch.Name = "ToggleSwitch";
-        ButtonBehavior.Add(toggleSwitch);
+        toggleSwitch.AddButtonBehavior();
         toggleSwitch.Size = new Vec2(36, 16);
         toggleSwitch.Draw = Draw;
         toggleSwitch.OnInserted(OnInserted);

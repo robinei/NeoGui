@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 
 [Flags]
-internal enum ElementFlags {
+public enum ElementFlags {
     Disabled = 1,
     ClipContent = 2,
     Opaque = 4,

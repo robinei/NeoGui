@@ -9,9 +9,10 @@ public struct StackLayoutConfig {
 public static class StackLayout {
     private static readonly StackLayoutConfig DefaultConfig = new();
 
-    public static void AddProps(Element elem) {
+    public static Element AddStackLayoutProps(this Element elem) {
         elem.Measure = Measure;
         elem.Layout = Layout;
+        return elem;
     }
 
     public static void Measure(Element elem) {

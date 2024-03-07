@@ -25,7 +25,9 @@ public enum ScrollAreaFlags {
     BounceX = 1,
     BounceY = 2,
     FillX = 4, // implies that the width of the content panel will be set to equal to that of the scroll area. so no scrolling
-    FillY = 8
+    FillY = 8,
+
+    Default = BounceX | BounceY
 }
 
 public enum ScrollAreaAxisMode {
@@ -40,14 +42,14 @@ public static class ScrollArea {
     private const double BounceInterval = 0.2;
     private const double DebounceInterval = 0.1;
 
-    public static Element Create(
-        Element parent, 
-        ScrollAreaFlags flags = ScrollAreaFlags.BounceX | ScrollAreaFlags.BounceY,
+    public static Element CreateScrollArea(
+        this Element parent, 
+        ScrollAreaFlags flags = ScrollAreaFlags.Default,
         Func<Element, Element>? contentCreator = null,
         object? key = null,
         StateDomain? domain = null)
     {
-        var scrollArea = Element.Create(parent, key, domain);
+        var scrollArea = parent.CreateElement(key, domain);
         scrollArea.ClipContent = true;
         scrollArea.Layout = Layout;
         scrollArea.OnInserted(OnInserted);
@@ -55,11 +57,11 @@ public static class ScrollArea {
         var state = scrollArea.GetOrCreateState<ScrollAreaState>();
         state.Flags = flags;
 
-        var content = contentCreator?.Invoke(scrollArea) ?? Element.Create(scrollArea);
+        var content = contentCreator?.Invoke(scrollArea) ?? scrollArea.CreateElement();
         content.Name = "ScrollArea.Content";
         content.ClipContent = true;
 
-        var overlay = Element.Create(scrollArea);
+        var overlay = scrollArea.CreateElement();
         overlay.Name = "ScrollArea.Overlay";
         overlay.Draw = DrawOverlay;
         overlay.ZIndex = 1;
@@ -67,17 +69,17 @@ public static class ScrollArea {
         return scrollArea;
     }
 
-    public static Element GetContentPanel(Element scrollArea) {
+    public static Element GetScrollAreaContentPanel(this Element scrollArea) {
         return scrollArea.FindChild(e => e.Name == "ScrollArea.Content") ?? throw new Exception("cannot find ScrollArea.Content");
     }
 
-    private static Element GetOverlayPanel(Element scrollArea) {
+    private static Element GetScrollAreaOverlayPanel(this Element scrollArea) {
         return scrollArea.FindChild(e => e.Name == "ScrollArea.Overlay") ?? throw new Exception("cannot find ScrollArea.Overlay");
     }
 
     public static void Layout(Element scrollArea) {
-        var content = GetContentPanel(scrollArea);
-        var overlay = GetOverlayPanel(scrollArea);
+        var content = scrollArea.GetScrollAreaContentPanel();
+        var overlay = scrollArea.GetScrollAreaOverlayPanel();
         var state = scrollArea.GetOrCreateState<ScrollAreaState>();
         content.Pos = state.Pos;
         if ((state.Flags & ScrollAreaFlags.FillX) != 0) { content.Width = scrollArea.Width; }
@@ -86,7 +88,7 @@ public static class ScrollArea {
     }
 
     private static void OnInserted(Element scrollArea) {
-        var content = GetContentPanel(scrollArea);
+        var content = scrollArea.GetScrollAreaContentPanel();
         var state = scrollArea.GetOrCreateState<ScrollAreaState>();
         state.Pos = ClampToBounds(state.Pos, content.Size, scrollArea.Size);
         state.IsDragging = false;
@@ -97,7 +99,7 @@ public static class ScrollArea {
     private static void OnDepthDescent(Element scrollArea) {
         var input = scrollArea.Context.Input;
         var state = scrollArea.GetOrCreateState<ScrollAreaState>();
-        var content = GetContentPanel(scrollArea);
+        var content = scrollArea.GetScrollAreaContentPanel();
 
         state.ClientSize = scrollArea.Size;
 
@@ -138,7 +140,7 @@ public static class ScrollArea {
     private static void UpdateAxis(Element scrollArea, int axis) {
         var input = scrollArea.Context.Input;
         var state = scrollArea.GetOrCreateState<ScrollAreaState>();
-        var content = GetContentPanel(scrollArea);
+        var content = scrollArea.GetScrollAreaContentPanel();
         // TODO: handle scale
 
         switch (state.Mode[axis]) {
@@ -276,8 +278,8 @@ public static class ScrollArea {
 
     private static void DrawOverlay(DrawContext dc) {
         var overlay = dc.Target;
-        var scrollArea = overlay.Parent!.Value;
-        var content = GetContentPanel(scrollArea);
+        var scrollArea = overlay.Parent;
+        var content = scrollArea.GetScrollAreaContentPanel();
 
         if (content.Width > scrollArea.Width) {
             var length = Math.Max(20, scrollArea.Width * scrollArea.Width / content.Width);

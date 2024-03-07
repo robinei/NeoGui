@@ -20,8 +20,8 @@ public static class Label {
     public static Color GetColor(Element label) => label.Get(DefaultColor).Value;
     public static TextAlignment GetAlignment(Element label) => label.Get(DefaultAlignment);
 
-    public static Element Create(Element parent, string text, Color? color = null, TextAlignment? alignment = null) {
-        var label = Element.Create(parent);
+    public static Element CreateLabel(this Element parent, string text, Color? color = null, TextAlignment? alignment = null) {
+        var label = parent.CreateElement();
         if (text != null) {
             label.Set(new LabelText { Value = text });
         }
