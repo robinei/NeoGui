@@ -149,8 +149,8 @@ public class NeoGuiContext {
         AttrLevel[index] = AttrLevel[parent.Index] + 1;
         AttrZIndex[index] = 0;
         AttrFlags[index] = 0;
-        AttrTransform[index].MakeIdentity();
-        AttrWorldTransform[index].MakeIdentity();
+        AttrTransform[index] = Transform.Identity;
+        AttrWorldTransform[index] = Transform.Identity;
         AttrRect[index] = new Rect();
         AttrBoundingRect[index] = new Rect();
         AttrDrawFunc[index] = null;
@@ -341,11 +341,14 @@ public class NeoGuiContext {
 
     private readonly Dictionary<long, Vec2> textSizeCache = [];
 
-    internal Vec2 GetTextSize(string text, int fontId) {
+    public Vec2 GetTextSize(string text, int fontId) {
         if (string.IsNullOrEmpty(text)) {
             return Vec2.Zero;
         }
         var stringId = InternString(text);
+        return GetTextSize(text, stringId, fontId);
+    }
+    public Vec2 GetTextSize(string text, int stringId, int fontId) {
         var key = Util.TwoIntsToLong(fontId, stringId);
         if (textSizeCache.TryGetValue(key, out Vec2 size)) {
             return size;

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head id="root">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height"/>
+    <style>
+        body, html {
+            overflow: hidden;
+            padding: 0px;
+            margin: 0px;
+            position: fixed;
+            background-color: white;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="1024" height="768" />
+</body>
+
+<script src="_framework/blazor.webassembly.js" autostart="false"></script>
+<script>
+
+
+var PIXEL_RATIO = (function () {
+    var ctx = document.createElement('canvas').getContext('2d'),
+        dpr = window.devicePixelRatio || 1,
+        bsr = ctx.webkitBackingStorePixelRatio ||
+              ctx.mozBackingStorePixelRatio ||
+              ctx.msBackingStorePixelRatio ||
+              ctx.oBackingStorePixelRatio ||
+              ctx.backingStorePixelRatio || 1;
+    return dpr / bsr;
+})();
+console.log('PIXEL_RATIO', PIXEL_RATIO);
+
+createHiDPICanvas = function(w, h, ratio) {
+    if (!ratio) { ratio = PIXEL_RATIO; }
+    var can = document.createElement('canvas');
+    can.width = w * ratio;
+    can.height = h * ratio;
+    can.style.width = w + 'px';
+    can.style.height = h + 'px';
+    can.getContext('2d').setTransform(ratio, 0, 0, ratio, 0, 0);
+    return can;
+}
+
+const canvas = document.getElementById('canvas');
+canvas.appendChild(createHiDPICanvas())
+const context = canvas.getContext('2d', { alpha: false });
+context.font = 'normal 12pt arial';
+function measureTextSize(text) {
+    const metrics = context.measureText(text);
+    //let fontHeight = metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent;
+    let actualHeight = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
+    const result = {X: metrics.width, Y: actualHeight};
+    return result;
+}
+
+
+window.onload = async function onWindowLoad() {
+    await Blazor.start();
+
+    let shouldDoFrame = true;
+
+    canvas.addEventListener('pointerdown', function onPointerDown(ev) {
+        canvas.setPointerCapture(ev.pointerId);
+        DotNet.invokeMethod('NeoGui.Wasm', 'OnPointerEvent', ev.clientX, ev.clientY, ev.pointerId, 1);
+    });
+    canvas.addEventListener('pointerup', function onPointerDown(ev) {
+        canvas.releasePointerCapture(ev.pointerId);
+        DotNet.invokeMethod('NeoGui.Wasm', 'OnPointerEvent', ev.clientX, ev.clientY, ev.pointerId, 0);
+    });
+    canvas.addEventListener('pointermove', function onPointerMove(ev) {
+        DotNet.invokeMethod('NeoGui.Wasm', 'OnPointerEvent', ev.clientX, ev.clientY, -1, -1);
+    });
+    document.addEventListener('keydown', (ev) => {
+        if (shouldPreventKeyDefault(ev.keyCode)) {
+            ev.preventDefault();
+        }
+        if (ev.keyCode === 32) {
+            shouldDoFrame = !shouldDoFrame;
+        }
+        DotNet.invokeMethod('NeoGui.Wasm', 'OnKeyEvent', ev.keyCode, 1);
+    });
+    document.addEventListener('keyup', (ev) => {
+        if (shouldPreventKeyDefault(ev.keyCode)) {
+            ev.preventDefault();
+        }
+        DotNet.invokeMethod('NeoGui.Wasm', 'OnKeyEvent', ev.keyCode, 0);
+    });
+    function shouldPreventKeyDefault(keyCode) {
+        return keyCode == 9; // Tab
+    }
+
+    requestAnimationFrame(mainLoop);
+
+    let frameTime = 10;
+    function mainLoop(time) {
+        if (shouldDoFrame) {
+            const t0 = performance.now();
+            context.save();
+            DotNet.invokeMethod('NeoGui.Wasm', 'DoFrame', canvas.clientWidth, canvas.clientHeight, time/1000);
+            if (isClipRectSet) {
+                context.restore();
+                isClipRectSet = false;
+            }
+            context.restore();
+            const t1 = performance.now();
+            frameTime = Math.round(0.75*frameTime + 0.25*(t1 - t0));
+            drawText(`Frametime: ${frameTime} ms`, 5, 15, 0, 0, 0, 255);
+        }
+        requestAnimationFrame(mainLoop);
+    }
+};
+
+
+function setTransform(a, b, c, d, e, f) {
+    context.setTransform(a, b, c, d, e, f);
+}
+
+let isClipRectSet = false;
+function setClipRect(x, y, w, h) {
+    if (isClipRectSet) {
+        context.restore();
+    }
+    isClipRectSet = true;
+    context.save();
+    context.beginPath();
+    context.rect(x, y, w, h);
+    context.clip();
+}
+
+function drawText(text, x, y, r, g, b, a) {
+    context.save();
+    context.rotate(Math.PI / 1440);
+    context.fillStyle = `rgba(${r},${g},${b},${a/255})`;
+    context.fillText(text, x, y)
+    context.restore();
+}
+
+function drawSolidRect(x, y, width, height, r, g, b, a) {
+    context.fillStyle = `rgba(${r},${g},${b},${a/255})`;
+    context.fillRect(x, y, width, height);
+}
+
+</script>
+</html>

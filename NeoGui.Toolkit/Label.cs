@@ -41,7 +41,7 @@ public static class Label {
         if (label.SizeToFit) {
             var text = label.Get(DefaultText).Value;
             if (text != null) {
-                label.Size = label.Context.Delegate.TextSize(text, 0); // TODO: fontId
+                label.Size = label.Context.GetTextSize(text, 0); // TODO: fontId
             }
         }
     }

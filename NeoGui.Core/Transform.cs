@@ -17,13 +17,6 @@ public struct Transform {
         Translation = a.ApplyForward(b.Translation + b.Pivot);
     }
 
-    public void MakeIdentity() {
-        Pivot = Vec3.Zero;
-        Rotation = Quat.Identity;
-        Translation = Vec3.Zero;
-        Scale = Vec3.ScaleIdentity;
-    }
-
     public readonly void ToMatrix(out Mat4 m) {
         Rotation.ToMatrix(out m);
 
@@ -50,4 +43,30 @@ public struct Transform {
         ay = new Vec3(m.M12, m.M22, m.M32);
         az = new Vec3(m.M13, m.M23, m.M33);
     }
+
+    public static Transform MakeScale(float sx, float sy, float sz) {
+        return new Transform {
+            Pivot = Vec3.Zero,
+            Rotation = Quat.Identity,
+            Translation = Vec3.Zero,
+            Scale = new Vec3(sx, sy, sz),
+        };
+    }
+
+    public static readonly Transform Identity = new() {
+        Pivot = Vec3.Zero,
+        Rotation = Quat.Identity,
+        Translation = Vec3.Zero,
+        Scale = Vec3.ScaleIdentity,
+    };
+
+    public bool IsIdentity => Identity.Equals(ref this);
+
+    public readonly bool Equals(ref Transform b) =>
+        Pivot.Equals(ref b.Pivot) &&
+        Rotation.Equals(ref b.Rotation) &&
+        Translation.Equals(ref b.Translation) &&
+        Scale.Equals(ref b.Scale);
+
+    public override readonly string ToString() => $"Transform(Pivot={Pivot}, Rotation={Rotation}, Translation={Translation}, Scale={Scale})";
 }

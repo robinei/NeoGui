@@ -1,7 +1,6 @@
 namespace NeoGui.Core;
 
 using System;
-using System.Diagnostics;
 
 public struct Vec2 {
     public float X, Y;
@@ -12,16 +11,16 @@ public struct Vec2 {
     }
 
     public float this[int i] {
-        readonly get {
-            Debug.Assert(i >= 0 && i < 2);
-            return i == 0 ? X : Y;
-        }
+        readonly get => i switch {
+            0 => X,
+            1 => Y,
+            _ => throw new ArgumentOutOfRangeException(nameof(i))
+        };
         set {
-            Debug.Assert(i >= 0 && i < 2);
-            if (i == 0) {
-                X = value;
-            } else {
-                Y = value;
+            switch (i) {
+                case 0: X = value; break;
+                case 1: Y = value; break;
+                default: throw new ArgumentOutOfRangeException(nameof(i));
             }
         }
     }
@@ -42,10 +41,12 @@ public struct Vec2 {
     public static Vec2 operator /(Vec2 a, Vec2 b) => new(a.X / b.X, a.Y / b.Y);
     public static Vec2 operator /(Vec2 v, float f) => v * (1f / f);
 
-    public static Vec2 Zero => new(0, 0);
-    public static Vec2 UnitX => new(1, 0);
-    public static Vec2 UnitY => new(0, 1);
-    public static Vec2 ScaleIdentity => new(1, 1);
+    public static readonly Vec2 Zero = new(0, 0);
+    public static readonly Vec2 UnitX = new(1, 0);
+    public static readonly Vec2 UnitY = new(0, 1);
+    public static readonly Vec2 ScaleIdentity = new(1, 1);
+
+    public readonly bool Equals(ref Vec2 v) => X == v.X && Y == v.Y;
 
     public override readonly string ToString() => $"Vec2({X}, {Y})";
 }

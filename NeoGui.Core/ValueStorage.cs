@@ -3,6 +3,7 @@ namespace NeoGui.Core;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 /// <summary>
 /// Static members of generic classes are generated once for each combination of type arguments.
@@ -61,7 +62,8 @@ internal class ValueStorage<TTypeCategory, TKey> {
                 return value;
             }
         }
-        throw new Exception("value not found");
+        Debug.Assert(false);
+        return default!;
     }
 
     public TValue GetValue<TValue>(TKey key, TValue defaultValue) {

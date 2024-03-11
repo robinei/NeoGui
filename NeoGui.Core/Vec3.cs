@@ -1,7 +1,6 @@
 ﻿namespace NeoGui.Core;
 
 using System;
-using System.Diagnostics;
 
 public struct Vec3 {
     public float X, Y, Z;
@@ -21,18 +20,18 @@ public struct Vec3 {
     public readonly Vec2 XY => new(X, Y);
 
     public float this[int i] {
-        readonly get {
-            Debug.Assert(i >= 0 && i < 3);
-            return i == 0 ? X : (i == 1 ? Y : Z);
-        }
+        readonly get => i switch {
+            0 => X,
+            1 => Y,
+            2 => Z,
+            _ => throw new ArgumentOutOfRangeException(nameof(i))
+        };
         set {
-            Debug.Assert(i >= 0 && i < 3);
-            if (i == 0) {
-                X = value;
-            } else if (i == 1) {
-                Y = value;
-            } else {
-                Z = value;
+            switch (i) {
+                case 0: X = value; break;
+                case 1: Y = value; break;
+                case 2: Z = value; break;
+                default: throw new ArgumentOutOfRangeException(nameof(i));
             }
         }
     }
@@ -54,11 +53,13 @@ public struct Vec3 {
     public static Vec3 operator /(Vec3 a, Vec3 b) => new(a.X / b.X, a.Y / b.Y, a.Z / b.Z);
     public static Vec3 operator /(Vec3 v, float f) => v * (1f / f);
 
-    public static Vec3 Zero => new(0, 0, 0);
-    public static Vec3 UnitX => new(1, 0, 0);
-    public static Vec3 UnitY => new(0, 1, 0);
-    public static Vec3 UnitZ => new(0, 0, 1);
-    public static Vec3 ScaleIdentity => new(1, 1, 1);
+    public static readonly Vec3 Zero = new(0, 0, 0);
+    public static readonly Vec3 UnitX = new(1, 0, 0);
+    public static readonly Vec3 UnitY = new(0, 1, 0);
+    public static readonly Vec3 UnitZ = new(0, 0, 1);
+    public static readonly Vec3 ScaleIdentity = new(1, 1, 1);
+
+    public readonly bool Equals(ref Vec3 v) => X == v.X && Y == v.Y && Z == v.Z;
 
     public override readonly string ToString() => $"Vec3({X}, {Y}, {Z})";
 }

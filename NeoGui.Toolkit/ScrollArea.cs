@@ -1,6 +1,7 @@
 ﻿namespace NeoGui.Toolkit;
 
 using System;
+using System.Diagnostics;
 using NeoGui.Core;
 
 public class ScrollAreaState {
@@ -70,11 +71,11 @@ public static class ScrollArea {
     }
 
     public static Element GetScrollAreaContentPanel(this Element scrollArea) {
-        return scrollArea.FindChild(e => e.Name == "ScrollArea.Content") ?? throw new Exception("cannot find ScrollArea.Content");
+        return scrollArea.FindChild(e => e.Name == "ScrollArea.Content")!.Value;
     }
 
     private static Element GetScrollAreaOverlayPanel(this Element scrollArea) {
-        return scrollArea.FindChild(e => e.Name == "ScrollArea.Overlay") ?? throw new Exception("cannot find ScrollArea.Overlay");
+        return scrollArea.FindChild(e => e.Name == "ScrollArea.Overlay")!.Value;
     }
 
     public static void Layout(Element scrollArea) {
@@ -238,7 +239,8 @@ public static class ScrollArea {
             break;
         }
         default:
-            throw new ArgumentOutOfRangeException();
+            Debug.Assert(false);
+            break;
         }
 
         if ((state.Flags & AxisBounceFlags[axis]) == 0) {

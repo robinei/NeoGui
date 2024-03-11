@@ -1,9 +1,8 @@
-namespace NeoGui;
+namespace NeoGui.Toolkit;
 
 using System;
 using System.Diagnostics;
 using NeoGui.Core;
-using NeoGui.Toolkit;
 
 public static class TestUi {
     private class TestState {
@@ -135,7 +134,7 @@ public static class TestUi {
                                 .AddPanelProps(new Color(230, 230, 230))
                                 .GetScrollAreaContentPanel()
                                     .SetSize(250, 250)
-                                    .SetRotation(Quat.FromAxisAngle(new Vec3(1, 1, 1).Normalized, (float)context.Input.Time))
+                                    //.SetRotation(Quat.FromAxisAngle(new Vec3(1, 1, 1).Normalized, (float)context.Input.Time))
                                     .SetClipContent(false)
                                     .AddPanelProps(new Color(220, 220, 220))
                                     .CreateLabel("Drag me")
@@ -145,8 +144,8 @@ public static class TestUi {
                                         .SetRect(10, 50, 100, 30)
                                         //.SetPivot(0, 0, 10)
                                         .SetRotation(Quat.FromAxisAngle(new Vec3(1, 1, 1).Normalized, (float)context.Input.Time))
-                                        //.SetRotation(Quat.FromAxisAngle(new Vec3(0, 0, 1).Normalized, (float)Math.Sin(ui.Input.Time)))
-                                        //.SetRotation(Quat.FromAxisAngle(new Vec3(0, 1, 0).Normalized, 1f))
+                                        //.SetRotation(Quat.FromAxisAngle(new Vec3(0, 0, 1).Normalized, (float)Math.Sin(context.Input.Time)))
+                                        //.SetRotation(Quat.FromAxisAngle(new Vec3(0, 0, 1).Normalized, (float)Math.PI*(float)Math.Sin(context.Input.Time)))
                                         .OnDepthDescent(e => {
                                             var p0 = e.ToWorldCoord(Vec3.Zero);
                                             e.Context.Delegate.DrawDot(p0 + e.Normal * 10, Color.Yellow);

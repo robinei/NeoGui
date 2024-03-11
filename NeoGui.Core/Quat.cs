@@ -1,7 +1,6 @@
 ﻿namespace NeoGui.Core;
 
 using System;
-using System.Diagnostics;
 
 public struct Quat {
     public float X, Y, Z, W;
@@ -23,20 +22,20 @@ public struct Quat {
     }
 
     public float this[int i] {
-        readonly get {
-            Debug.Assert(i >= 0 && i < 4);
-            return i == 0 ? X : (i == 1 ? Y : (i == 2 ? Z : W));
-        }
+        readonly get => i switch {
+            0 => X,
+            1 => Y,
+            2 => Z,
+            3 => W,
+            _ => throw new ArgumentOutOfRangeException(nameof(i))
+        };
         set {
-            Debug.Assert(i >= 0 && i < 4);
-            if (i == 0) {
-                X = value;
-            } else if (i == 1) {
-                Y = value;
-            } else if (i == 2) {
-                Z = value;
-            } else {
-                W = value;
+            switch (i) {
+                case 0: X = value; break;
+                case 1: Y = value; break;
+                case 2: Z = value; break;
+                case 3: W = value; break;
+                default: throw new ArgumentOutOfRangeException(nameof(i));
             }
         }
     }
@@ -144,6 +143,8 @@ public struct Quat {
     }
 
     public static Quat Identity => new(0, 0, 0, 1);
+
+    public readonly bool Equals(ref Quat q) => X == q.X && Y == q.Y && Z == q.Z && W == q.W;
 
     public override readonly string ToString() => $"Quat({X}, {Y}, {Z}, {W})";
 }

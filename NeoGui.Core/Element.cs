@@ -83,7 +83,8 @@ public readonly struct Element : IComparable<Element>, IEquatable<Element> {
                 return state!;
             }
             if (!elem.HasParent) {
-                throw new Exception("state not found");
+                Debug.Assert(false);
+                return default!;
             }
         }
     }
@@ -281,7 +282,7 @@ public readonly struct Element : IComparable<Element>, IEquatable<Element> {
             return false;
         }
         public void Reset() => elemIndex = 0;
-        public readonly Element Current => elemIndex <= 0 ? throw new InvalidOperationException() : new Element(context, elemIndex);
+        public readonly Element Current => new(context, elemIndex);
         readonly object IEnumerator.Current => Current;
         public readonly void Dispose() { }
     }

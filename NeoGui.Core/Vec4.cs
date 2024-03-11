@@ -1,7 +1,6 @@
 ﻿namespace NeoGui.Core;
 
 using System;
-using System.Diagnostics;
 
 public struct Vec4 {
     public float X, Y, Z, W;
@@ -31,20 +30,20 @@ public struct Vec4 {
     public readonly Vec3 XYZ => new(X, Y, Z);
 
     public float this[int i] {
-        readonly get {
-            Debug.Assert(i >= 0 && i < 4);
-            return i == 0 ? X : (i == 1 ? Y : (i == 2 ? Z : W));
-        }
+        readonly get => i switch {
+            0 => X,
+            1 => Y,
+            2 => Z,
+            3 => W,
+            _ => throw new ArgumentOutOfRangeException(nameof(i))
+        };
         set {
-            Debug.Assert(i >= 0 && i < 3);
-            if (i == 0) {
-                X = value;
-            } else if (i == 1) {
-                Y = value;
-            } else if (i == 2) {
-                Z = value;
-            } else {
-                W = value;
+            switch (i) {
+                case 0: X = value; break;
+                case 1: Y = value; break;
+                case 2: Z = value; break;
+                case 3: W = value; break;
+                default: throw new ArgumentOutOfRangeException(nameof(i));
             }
         }
     }
@@ -65,12 +64,14 @@ public struct Vec4 {
     public static Vec4 operator /(Vec4 a, Vec4 b) => new(a.X / b.X, a.Y / b.Y, a.Z / b.Z, a.W / b.W);
     public static Vec4 operator /(Vec4 v, float f) => v * (1f / f);
 
-    public static Vec4 Zero => new(0, 0, 0, 0);
-    public static Vec4 UnitX => new(1, 0, 0, 0);
-    public static Vec4 UnitY => new(0, 1, 0, 0);
-    public static Vec4 UnitZ => new(0, 0, 1, 0);
-    public static Vec4 UnitW => new(0, 0, 0, 1);
-    public static Vec4 ScaleIdentity => new(1, 1, 1, 1);
+    public static readonly Vec4 Zero = new(0, 0, 0, 0);
+    public static readonly Vec4 UnitX = new(1, 0, 0, 0);
+    public static readonly Vec4 UnitY = new(0, 1, 0, 0);
+    public static readonly Vec4 UnitZ = new(0, 0, 1, 0);
+    public static readonly Vec4 UnitW = new(0, 0, 0, 1);
+    public static readonly Vec4 ScaleIdentity = new(1, 1, 1, 1);
+
+    public readonly bool Equals(ref Vec4 v) => X == v.X && Y == v.Y && Z == v.Z && W == v.W;
 
     public override readonly string ToString() => $"Vec4({X}, {Y}, {Z}, {W})";
 }

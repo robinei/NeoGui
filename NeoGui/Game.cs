@@ -9,6 +9,8 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using NeoGui.Core;
+using NeoGui.Toolkit;
+using ButtonState = Microsoft.Xna.Framework.Input.ButtonState;
 using Color = Microsoft.Xna.Framework.Color;
 
 public class Game : Microsoft.Xna.Framework.Game, INeoGuiDelegate {
@@ -59,8 +61,7 @@ public class Game : Microsoft.Xna.Framework.Game, INeoGuiDelegate {
         IsFixedTimeStep = false;
         Content.RootDirectory = "Content";
 
-        var trans = new Transform();
-        trans.MakeIdentity();
+        var trans = Transform.Identity;
         //trans.Translation.X += 10;
         trans.Scale = Vec3.ScaleIdentity * 0.5f;
         trans.Rotation = Quat.FromAxisAngle(1, 0, 0, (float)Math.PI);
@@ -75,10 +76,10 @@ public class Game : Microsoft.Xna.Framework.Game, INeoGuiDelegate {
         Debug.WriteLine("v2: " + v2);
         Debug.WriteLine("v3: " + v3);
         
-        Debug.WriteLine("sizeof(Transform): " + Marshal.SizeOf(typeof(Transform)));
-        Debug.WriteLine("sizeof(Mat4): " + Marshal.SizeOf(typeof(Mat4)));
+        Debug.WriteLine("sizeof(Transform): " + Marshal.SizeOf<Transform>());
+        Debug.WriteLine("sizeof(Mat4): " + Marshal.SizeOf<Mat4>());
 
-        trans.MakeIdentity();
+        trans = Transform.Identity;
         trans.Translation = new Vec3(1, 1, 0);
         trans.ToMatrix(out m);
 
@@ -86,7 +87,7 @@ public class Game : Microsoft.Xna.Framework.Game, INeoGuiDelegate {
         Debug.WriteLine("Mat1: " + m);
 
 
-        trans.MakeIdentity();
+        trans = Transform.Identity;
         trans.Rotation = Quat.FromAxisAngle(new Vec3(1, 2, 3).Normalized, 1f);
         trans.GetAxes(out Vec3 ax, out Vec3 ay, out Vec3 az);
         Debug.WriteLine("ax: " + ax);
@@ -204,7 +205,8 @@ public class Game : Microsoft.Xna.Framework.Game, INeoGuiDelegate {
                     spriteBatch.DrawString(font, ui.GetInternedString(command.Text.StringId), command.Text.Vec2.ToMonoGameVector2(), command.Text.Color.ToMonoGameColor());
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    Debug.Assert(false);
+                    break;
                 }
             }
         }
