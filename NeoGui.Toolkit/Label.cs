@@ -32,8 +32,8 @@ public static class Label {
             label.Set(alignment.Value);
         }
         label.SizeToFit = true;
-        label.Measure = Measure;
-        label.Draw = Draw;
+        label.OnMeasure(Measure);
+        label.OnDraw(Draw);
         return label;
     }
 

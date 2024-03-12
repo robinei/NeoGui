@@ -14,7 +14,7 @@ public static class ToggleSwitch {
         toggleSwitch.Name = "ToggleSwitch";
         toggleSwitch.AddButtonBehavior();
         toggleSwitch.Size = new Vec2(36, 16);
-        toggleSwitch.Draw = Draw;
+        toggleSwitch.OnDraw(Draw);
         toggleSwitch.OnInserted(OnInserted);
         toggleSwitch.OnDepthDescent(OnDepthDescent);
         if (onToggled != null) {

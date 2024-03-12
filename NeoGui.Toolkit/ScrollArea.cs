@@ -51,7 +51,7 @@ public static class ScrollArea {
     {
         var scrollArea = parent.CreateElement(key, domain);
         scrollArea.ClipContent = true;
-        scrollArea.Layout = Layout;
+        scrollArea.OnLayout(Layout);
         scrollArea.OnInserted(OnInserted);
         scrollArea.OnDepthDescent(OnDepthDescent);
         var state = scrollArea.GetOrCreateState<ScrollAreaState>();
@@ -63,7 +63,7 @@ public static class ScrollArea {
 
         var overlay = scrollArea.CreateElement();
         overlay.Name = "ScrollArea.Overlay";
-        overlay.Draw = DrawOverlay;
+        overlay.OnDraw(DrawOverlay);
         overlay.ZIndex = 1;
 
         return scrollArea;
@@ -77,7 +77,7 @@ public static class ScrollArea {
         return scrollArea.FindChild(e => e.Name == "ScrollArea.Overlay") ?? throw new Exception("cannot find ScrollArea.Overlay");
     }
 
-    public static void Layout(Element scrollArea) {
+    public static void Layout(Element scrollArea, Constraints c) {
         var content = scrollArea.GetScrollAreaContentPanel();
         var overlay = scrollArea.GetScrollAreaOverlayPanel();
         var state = scrollArea.GetOrCreateState<ScrollAreaState>();

@@ -15,7 +15,7 @@ public static class Panel {
         if (backgroundColor != null) {
             elem.Set(new PanelBackground { Color = backgroundColor.Value });
         }
-        elem.Draw = Draw;
+        elem.OnDraw(Draw);
         return elem;
     }
 

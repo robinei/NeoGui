@@ -10,39 +10,39 @@ public static class StackLayout {
     private static readonly StackLayoutConfig DefaultConfig = new();
 
     public static Element AddStackLayoutProps(this Element elem) {
-        elem.Measure = Measure;
-        elem.Layout = Layout;
+        elem.OnMeasure(Measure);
+        elem.OnLayout(Layout);
         return elem;
     }
 
-    public static void Measure(Element elem) {
+    public static void Measure(Element e) {
         var maxWidth = 0.0f;
         var maxHeight = 0.0f;
         var sumWidth = 0.0f;
         var sumHeight = 0.0f;
-        foreach (var child in elem.Children) {
+        foreach (var child in e.Children) {
             var size = child.Size;
             if (size.X > maxWidth) { maxWidth = size.X; }
             if (size.Y > maxHeight) { maxHeight = size.Y; }
             sumWidth += size.X;
             sumHeight += size.Y;
         }
-        var config = elem.Get(DefaultConfig);
+        var config = e.Get(DefaultConfig);
         if (config.Horizontal) {
-            elem.Width = sumWidth;
-            elem.Height = maxHeight;
+            e.Width = sumWidth;
+            e.Height = maxHeight;
         } else {
-            elem.Width = maxWidth;
-            elem.Height = sumHeight;
+            e.Width = maxWidth;
+            e.Height = sumHeight;
         }
     }
 
-    public static void Layout(Element elem) {
-        var config = elem.Get(DefaultConfig);
-        var clientSize = elem.Size;
+    public static void Layout(Element e, Constraints c) {
+        var config = e.Get(DefaultConfig);
+        var clientSize = e.Size;
         var offset = 0.0f;
         var axis = config.Horizontal ? 0 : 1;
-        foreach (var child in elem.Children) {
+        foreach (var child in e.Children) {
             ref var pos = ref child.Pos;
             ref var size = ref child.Size;
             pos[axis] = offset;

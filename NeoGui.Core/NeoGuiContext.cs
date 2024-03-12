@@ -38,7 +38,7 @@ public class NeoGuiContext {
     internal Rect[] AttrClipRect = new Rect[InitialArraySize];
     internal Action<DrawContext>?[] AttrDrawFunc = new Action<DrawContext>?[InitialArraySize];
     internal Action<Element>?[] AttrMeasureFunc = new Action<Element>?[InitialArraySize];
-    internal Action<Element>?[] AttrLayoutFunc = new Action<Element>?[InitialArraySize];
+    internal Action<Element, Constraints>?[] AttrLayoutFunc = new Action<Element, Constraints>?[InitialArraySize];
 
     // extra data which we don't deign to make an array for above goes here...
     internal readonly ValueStorage<DataKeys, int> DataStorage = new();
@@ -176,7 +176,11 @@ public class NeoGuiContext {
 
     private void LayoutElements() {
         for (var i = 0; i < ElementCount; ++i) { // top down
-            AttrLayoutFunc[i]?.Invoke(new Element(this, i));
+            Element e = new(this, i);
+            Constraints c = new();
+            c.Min.X = c.Max.X = e.Width;
+            c.Min.Y = c.Max.Y = e.Height;
+            e.Layout(c);
         }
     }
 

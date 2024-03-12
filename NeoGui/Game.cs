@@ -59,6 +59,11 @@ public class Game : Microsoft.Xna.Framework.Game, INeoGuiDelegate {
         IsFixedTimeStep = false;
         Content.RootDirectory = "Content";
 
+        Window.AllowUserResizing = true;
+        Window.ClientSizeChanged += OnResize;
+    }
+
+    private void TestTransform() {
         var trans = new Transform();
         trans.MakeIdentity();
         //trans.Translation.X += 10;
@@ -74,7 +79,7 @@ public class Game : Microsoft.Xna.Framework.Game, INeoGuiDelegate {
 
         Debug.WriteLine("v2: " + v2);
         Debug.WriteLine("v3: " + v3);
-        
+
         Debug.WriteLine("sizeof(Transform): " + Marshal.SizeOf(typeof(Transform)));
         Debug.WriteLine("sizeof(Mat4): " + Marshal.SizeOf(typeof(Mat4)));
 
@@ -101,9 +106,26 @@ public class Game : Microsoft.Xna.Framework.Game, INeoGuiDelegate {
         Debug.WriteLine("by: " + by);
         Debug.WriteLine("bz: " + bz);
     }
-    
+
+    private void OnResize(object? sender, EventArgs? e) {
+
+        if ((graphics.PreferredBackBufferWidth != graphics.GraphicsDevice.Viewport.Width) ||
+            (graphics.PreferredBackBufferHeight != graphics.GraphicsDevice.Viewport.Height)) {
+            Console.WriteLine($"Resize: {graphics.GraphicsDevice.Viewport.Width} x {graphics.GraphicsDevice.Viewport.Height}");
+            graphics.PreferredBackBufferWidth = graphics.GraphicsDevice.Viewport.Width;
+            graphics.PreferredBackBufferHeight = graphics.GraphicsDevice.Viewport.Height;
+            graphics.ApplyChanges();
+            CreateRenderTarget();
+        }
+    }
+
     protected override void Initialize() {
         base.Initialize();
+        CreateRenderTarget();
+        IsMouseVisible = true;
+    }
+    
+    private void CreateRenderTarget() {
         renderTarget = new RenderTarget2D(
             GraphicsDevice,
             GraphicsDevice.PresentationParameters.BackBufferWidth,
@@ -113,9 +135,8 @@ public class Game : Microsoft.Xna.Framework.Game, INeoGuiDelegate {
             DepthFormat.Depth24,
             2,
             RenderTargetUsage.PreserveContents);
-        IsMouseVisible = true;
     }
-    
+
     protected override void LoadContent() {
         spriteBatch = new SpriteBatch(GraphicsDevice);
         font = Content.Load<SpriteFont>("Arial");
@@ -131,7 +152,7 @@ public class Game : Microsoft.Xna.Framework.Game, INeoGuiDelegate {
     
     protected override void UnloadContent() {
     }
-    
+
     protected override void Update(GameTime gameTime) {
         ++frameCounter;
         debugDots.Clear();

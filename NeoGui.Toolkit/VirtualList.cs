@@ -13,7 +13,7 @@ public static class VirtualList {
         StateDomain? domain = null)
     {
         var virtualList = parent.CreateScrollArea(ScrollAreaFlags.BounceY | ScrollAreaFlags.FillX, key: key, domain: domain);
-        virtualList.Layout = Layout;
+        virtualList.OnLayout(Layout);
         
         var state = virtualList.GetOrCreateState<ScrollAreaState>();
         var content = virtualList.GetScrollAreaContentPanel();
@@ -34,12 +34,12 @@ public static class VirtualList {
         return virtualList;
     }
 
-    public static void Layout(Element virtualList) {
+    public static void Layout(Element virtualList, Constraints c) {
         var content = virtualList.GetScrollAreaContentPanel();
         var width = virtualList.Width;
         foreach (var item in content.Children) {
             item.Width = width;
         }
-        ScrollArea.Layout(virtualList);
+        ScrollArea.Layout(virtualList, c);
     }
 }

@@ -43,6 +43,21 @@ public readonly struct Element : IComparable<Element>, IEquatable<Element> {
     /// Use this to clean up state, if necessary.
     /// </summary>
     public Element OnRemoved(Action<ElementStateProxy> handler) { Context.AddRemoveHandler(Context.AttrStateId[Index], handler); return this; }
+
+    public Element OnDraw(Action<DrawContext> value) { Context.AttrDrawFunc[Index] = value; return this; }
+
+    public Element OnMeasure(Action<Element> value) { Context.AttrMeasureFunc[Index] = value; return this; }
+
+    public Element OnLayout(Action<Element, Constraints> value) { Context.AttrLayoutFunc[Index] = value; return this; }
+
+    public Element Layout(Constraints c) {
+        var func = Context.AttrLayoutFunc[Index];
+        if (func != null) {
+            Context.AttrLayoutFunc[Index] = null;
+            func(this, c);
+        }
+        return this;
+    }
     #endregion
 
 
@@ -185,9 +200,6 @@ public readonly struct Element : IComparable<Element>, IEquatable<Element> {
     public ref Vec2 Pos => ref Context.AttrRect[Index].Pos;
     public ref Vec2 Size => ref Context.AttrRect[Index].Size;
     public ref readonly Rect ClipRect => ref Context.AttrClipRect[Index];
-    public ref Action<DrawContext>? Draw => ref Context.AttrDrawFunc[Index];
-    public ref Action<Element>? Measure => ref Context.AttrMeasureFunc[Index];
-    public ref Action<Element>? Layout => ref Context.AttrLayoutFunc[Index];
     #endregion
 
 
@@ -217,9 +229,6 @@ public readonly struct Element : IComparable<Element>, IEquatable<Element> {
     public Element SetSize(float w, float h) { Context.AttrRect[Index].Size = new Vec2(w, h); return this; }
     public Element SetRect(Rect value) { Context.AttrRect[Index] = value; return this; }
     public Element SetRect(float x, float y, float w, float h) { Context.AttrRect[Index] = new Rect(x, y, w, h); return this; }
-    public Element OnDraw(Action<DrawContext> value) { Context.AttrDrawFunc[Index] = value; return this; }
-    public Element OnMeasure(Action<Element> value) { Context.AttrMeasureFunc[Index] = value; return this; }
-    public Element OnLayout(Action<Element> value) { Context.AttrLayoutFunc[Index] = value; return this; }
     #endregion
 
 
@@ -230,7 +239,7 @@ public readonly struct Element : IComparable<Element>, IEquatable<Element> {
         return Context.GetHashCode().CompareTo(other.Context.GetHashCode());
     }
     public bool Equals(Element other) => Context == other.Context && Index == other.Index;
-    public override bool Equals(object other) => other is Element && Equals((Element)other);
+    public override bool Equals(object other) => other is Element e && Equals(e);
     public override int GetHashCode() => unchecked((Context.GetHashCode() * 397) ^ Index);
     public static bool operator ==(Element a, Element b) => a.Equals(b);
     public static bool operator !=(Element a, Element b) => !a.Equals(b);
@@ -238,17 +247,29 @@ public readonly struct Element : IComparable<Element>, IEquatable<Element> {
 
 
     #region Tree traversal and child enumeration
-    public bool HasParent => Index != 0;
+    public bool HasParent => Index > 0;
+    public bool HasChildren => Context.AttrFirstChild[Index] > 0;
     public Element Parent => new(Context, Context.AttrParent[Index]);
-    public Element? FirstChild { get {
-        int firstChild = Context.AttrFirstChild[Index];
-        return firstChild > 0 ? new(Context, firstChild) : null;
-    } }
-    public Element? NextSibling { get {
-        int nextSibling = Context.AttrNextSibling[Index];
-        return nextSibling > 0 ? new(Context, nextSibling) : null;
-    } }
-
+    public Element? FirstChild {
+        get {
+            int firstChild = Context.AttrFirstChild[Index];
+            return firstChild > 0 ? new(Context, firstChild) : null;
+        }
+    }
+    public Element? NextSibling {
+        get {
+            int nextSibling = Context.AttrNextSibling[Index];
+            return nextSibling > 0 ? new(Context, nextSibling) : null;
+        }
+    }
+    public Element SingleChild {
+        get {
+            int firstChild = Context.AttrFirstChild[Index];
+            Debug.Assert(firstChild > 0);
+            Debug.Assert(firstChild == Context.AttrLastChild[Index]);
+            return new(Context, firstChild);
+        }
+    }
     public Element? FindChild(Func<Element, bool> predicate) {
         for (Element? child = FirstChild; child != null; child = child.Value.NextSibling) {
             if (predicate(child.Value)) {
