@@ -3,52 +3,26 @@
 using System;
 using NeoGui.Core;
 
-public class ToggleSwitchState {
-    public float Pos, Start, Target;
-    public double T0, T1;
-}
-
 public static class ToggleSwitch {
+    private struct ToggleSwitchValue {
+        public bool On;
+    }
+
     public static Element CreateToggleSwitch(this Element parent, bool on = false, Action<Element>? onToggled = null) {
-        var toggleSwitch = parent.CreateElement();
-        toggleSwitch.Name = "ToggleSwitch";
-        toggleSwitch.AddButtonBehavior();
-        toggleSwitch.Size = new Vec2(36, 16);
-        toggleSwitch.Draw = Draw;
-        toggleSwitch.OnInserted(OnInserted);
-        toggleSwitch.OnDepthDescent(OnDepthDescent);
-        if (onToggled != null) {
-            toggleSwitch.Set(new ButtonCallback { OnClick = onToggled });
-        }
-        var state = toggleSwitch.GetOrCreateState<ToggleSwitchState>();
-        var target = on ? 1f : 0f;
-        if (Math.Abs(target - state.Target) > 0.000001f) {
-            state.Start = state.Pos;
-            state.Target = target;
-            state.T0 = toggleSwitch.Context.Input.Time;
-            state.T1 = state.T0 + Math.Abs(state.Target - state.Pos) * 0.15;
-        }
-        return toggleSwitch;
-    }
-
-    public static void OnInserted(Element toggleSwitch) {
-        var state = toggleSwitch.GetOrCreateState<ToggleSwitchState>();
-        state.Pos = state.Target;
-    }
-
-    private static void OnDepthDescent(Element toggleSwitch) {
-        var state = toggleSwitch.GetOrCreateState<ToggleSwitchState>();
-        if (Math.Abs(state.Target - state.Pos) > 0.000001f) {
-            var t = Util.NormalizeInInterval(toggleSwitch.Context.Input.Time, state.T0, state.T1);
-            state.Pos = state.Start + (state.Target - state.Start) * (float)t;
-        }
+        return parent.CreateElement()
+            .SetName("ToggleSwitch")
+            .AddButtonBehavior(onToggled)
+            .SetSize(36, 16)
+            .OnDraw(Draw)
+            .Set(new ToggleSwitchValue { On = on });
     }
 
     public static void Draw(DrawContext dc) {
-        var toggleSwitch = dc.Target;
-        var state = toggleSwitch.GetOrCreateState<ToggleSwitchState>();
-        var size = toggleSwitch.Size;
+        Element toggleSwitch = dc.Target;
+        Vec2 size = toggleSwitch.Size;
         dc.SolidRect(new Rect(size), Color.LightGray);
-        TextButton.DrawButtonRect(dc, toggleSwitch, new Rect(state.Pos * (size.X - size.Y), 0, size.Y, size.Y));
+        bool on = toggleSwitch.Get<ToggleSwitchValue>().On;
+        float x = toggleSwitch.Animate<ToggleSwitchValue>(on ? 1.0f : 0.0f) * (size.X - size.Y);
+        TextButton.DrawButtonRect(dc, toggleSwitch, new Rect(x, 0, size.Y, size.Y));
     }
 }

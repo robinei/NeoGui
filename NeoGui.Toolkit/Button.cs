@@ -17,10 +17,13 @@ public struct ButtonCallback {
 public static class ButtonBehavior {
     private static readonly ButtonCallback DefaultCallback = new() { OnClick = e => { } };
 
-    public static Element AddButtonBehavior(this Element e) {
+    public static Element AddButtonBehavior(this Element e, Action<Element>? onClick = null) {
         e.OnDepthDescent(OnDepthDescent);
         e.OnTreeDescent(OnTreeDescent);
         e.OnRemoved(OnRemoved);
+        if (onClick != null) {
+            e.Set(new ButtonCallback { OnClick = onClick });
+        }
         return e;
     }
 
@@ -104,10 +107,9 @@ public static class TextButton {
 
     public static Element CreateTextButton(this Element parent, string text, Action<Element> onClick) {
         return parent.CreateLabel(text, Color.White, TextAlignment.Center)
-            .AddButtonBehavior()
+            .AddButtonBehavior(onClick)
             .SetSizeToFit(false)
-            .OnDraw(Draw)
-            .Set(new ButtonCallback { OnClick = onClick });
+            .OnDraw(Draw);
     }
 
     public static void Draw(DrawContext dc) {

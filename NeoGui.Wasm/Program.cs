@@ -28,13 +28,14 @@ public class Program {
     }
 
     private static async Task Main(string[] args) {
+        Trace.Listeners.Add(new ConsoleTraceListener());
         var builder = WebAssemblyHostBuilder.CreateDefault(args);
         var host = builder.Build();
         jsRuntime = (IJSInProcessRuntime)host.Services.GetRequiredService<IJSRuntime>();
         FixJsonDeserialization();
         context = new NeoGuiContext(new NeoGuiDelegate(jsRuntime));
         var size = context.Delegate.TextSize("foo", 0);
-        Console.WriteLine($"size: {size.X}x{size.Y}");
+        Debug.WriteLine($"size: {size.X}x{size.Y}");
         await host.RunAsync();
     }
 
